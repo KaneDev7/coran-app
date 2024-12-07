@@ -1,22 +1,21 @@
 import React, { useContext } from 'react'
-import { View, Text, TouchableNativeFeedback, StyleSheet } from 'react-native'
+import { View, Text, TouchableNativeFeedback, StyleSheet, Pressable } from 'react-native'
 import { GlobalContext } from '../app/(tabs)/_layout'
 import { primary, secondary2, secondary3 } from '../style/variables'
 import { Entypo } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 
 export default function SourahSelect() {
 
     const {surahTextValue } = useContext(GlobalContext)
     return (
-        <Link href="/">
-            <View
+            <Pressable
+            onPress={() => router.push('/')}
                 style={styles.container}
             >
                 <Text style={styles.text} > {surahTextValue} </Text>
                 <Entypo name="select-arrows" size={15} color={primary} />
-            </View>
-        </Link>
+            </Pressable>
     )
 }
 

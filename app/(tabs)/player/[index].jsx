@@ -52,7 +52,7 @@ export default function Player() {
         <View style={styles.container}>
             <Rciter />
             <TextContainer />
-            <SourahSelect />
+            <SourahSelect /> 
             <Track />
             {/* <SelectVerset /> */}
             <SelectVersetb />
