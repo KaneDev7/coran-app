@@ -36,7 +36,7 @@ export default function TextContainer() {
 const style = StyleSheet.create({
   textContainer: {
     width: windowWidth,
-    height: windowWidth - 100,
+    height: windowWidth - 150,
     backgroundColor: secondary3,
     borderWidth: 3,
     borderColor: secondary2,

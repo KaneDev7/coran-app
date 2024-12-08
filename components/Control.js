@@ -78,6 +78,6 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 50,
-    marginVertical: 20,
+    marginVertical: 15,
   }
 })

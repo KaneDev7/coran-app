@@ -44,11 +44,13 @@ export default function RootLayout() {
   const [currentSlide, setCurrentSlide] = useState(selectSartVerset)
   const [surahTextValue, setSurahTextValue] = useState(sourates[0].nom)
   const [reciter, setReciter] = useState('aymanswoaid')
-  const [rate, setRate] = useState(1)
   const [duration, setDuration] = useState(0)
   const [timeUpdate, setTimeUpdate] = useState(0)
+  const [volume, setVolume] = useState(0.2)
+  const [rate, setRate] = useState(1)
 
   let currentVerset = startPlayVerset
+
 
   function onPlaybackStatusUpdate(status) {
     setTimeUpdate(status.positionMillis)
@@ -106,6 +108,17 @@ export default function RootLayout() {
     } : undefined;
   }, [sound]);
 
+  useEffect(() => {
+    if(sound){
+      sound.setVolumeAsync(volume)
+    }
+  }, [sound, volume]);
+
+  useEffect(() => {
+    if(sound){
+      sound.setRateAsync(rate, true)
+    }
+  }, [sound, rate]);
 
   useEffect(() => {
     if (loaded) {
@@ -135,11 +148,13 @@ export default function RootLayout() {
       setSelectEndVerset,
       playSound,
       setSound,
+      volume,
+      setVolume,
       isLoading,
       setIsLoading,
       setRate,
-      setReciter,
       rate,
+      setReciter,
       sound,
       reciter,
       coranText,

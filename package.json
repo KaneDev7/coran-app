@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@miblanchard/react-native-slider": "^2.6.0",
     "@react-navigation/bottom-tabs": "^7.0.0",
     "@react-navigation/native": "^7.0.0",
     "expo": "~52.0.11",
@@ -43,7 +44,8 @@
     "react-native-svg": "^15.9.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
-    "react-native-webview": "13.12.2"
+    "react-native-webview": "13.12.2",
+    "rm": "^0.1.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

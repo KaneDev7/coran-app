@@ -37,7 +37,7 @@ export default function Track() {
 const style = StyleSheet.create({
     track: {
         width: windowWidth,
-        marginVertical : 4
+        marginTop : 4
     },
     progressBar: {
       width: windowWidth,
