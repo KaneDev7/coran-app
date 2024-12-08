@@ -10,6 +10,8 @@ import { sourates } from '@/constants/sorats.list';
 import SourahSelect from '@/components/SourahSelect'
 import { useLocalSearchParams } from 'expo-router';
 import SelectVersetb from "../../../components/SelectVersetb"
+import VolumeInput from "../../../components/VolumeInput"
+import RateInput from "../../../components/RateInput"
 
 export default function Player() {
 
@@ -54,9 +56,9 @@ export default function Player() {
             <TextContainer />
             <SourahSelect /> 
             <Track />
-            {/* <SelectVerset /> */}
+            <RateInput />
             <SelectVersetb />
-
+            <VolumeInput />
             <View style={styles.container}>
                 <Control />
             </View>
