@@ -50,11 +50,27 @@ export default function RootLayout() {
   const [timeUpdate, setTimeUpdate] = useState(0)
   const [volume, setVolume] = useState(0.8)
   const [rate, setRate] = useState(1)
+  const [leasonList, setLeasonList] = useState([])
 
   let currentVerset = startPlayVerset
 
+  console.log("leasonList", leasonList)
+
+  const onSaveLeason = () => {
+    const newLeason =
+    {
+      selectSartVerset,
+      selectEndVerset,
+      surahNumber,
+      index: currentIndex,
+    }
+    setLeasonList(prev => {
+      return [newLeason, ...prev]
+    })
+  }
 
   function onPlaybackStatusUpdate(status) {
+
     setTimeUpdate(status.positionMillis)
     setIsLoading(!status.isPlaying)
 
@@ -74,6 +90,7 @@ export default function RootLayout() {
       playSound(`https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${currentVerset}.mp3`)
     }
   };
+
 
 
   async function playSound(url) {
@@ -156,6 +173,8 @@ export default function RootLayout() {
       setIsLoading,
       setRate,
       rate,
+      onSaveLeason,
+      leasonList,
       setReciter,
       sound,
       reciter,
@@ -181,10 +200,19 @@ export default function RootLayout() {
             tabBarIcon: ({ color }) => <Entypo name="list" size={24} color="black" />,
           }}
         />
-          <Tabs.Screen
+        <Tabs.Screen
+          name="leasons"
+          options={{
+            title: "Cours",
+            tabBarIcon: ({ color }) => <Entypo name="book" size={24} color="black" />,
+          }}
+        />
+
+        <Tabs.Screen
           name="player/[index]"
           options={{
             title: 'player',
+            headerShown: false,
             tabBarIcon: ({ color }) => <FontAwesome5 name="play" size={24} color="black" />,
           }}
         />
@@ -195,7 +223,7 @@ export default function RootLayout() {
             tabBarIcon: ({ color }) => <FontAwesome5 name="headset" size={24} color="black" />,
           }}
         />
-      
+
       </Tabs>
       <StatusBar style="auto" />
     </GlobalContext.Provider>

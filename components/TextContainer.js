@@ -46,7 +46,7 @@ const style = StyleSheet.create({
     borderRadius: 10
   },
   text: {
-    fontSize: 25,
+    fontSize: 27,
     lineHeight: 60,
     textAlign: 'center',
     color : primary,

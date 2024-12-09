@@ -3,6 +3,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import TextContainer from '@/components/TextContainer';
 import Track from '@/components/Track';
 import Rciter from '@/components/Rciter';
+import TopBar from '@/components/TopBar';
 import Control from '@/components/Control';
 import { useContext, useEffect } from 'react';
 import { GlobalContext } from '../_layout';
@@ -16,6 +17,7 @@ import RateInput from "@/components/RateInput"
 export default function Player() {
 
     const { index } = useLocalSearchParams()
+    console.log("index", index)
 
     const {
         setIsplaying,
@@ -33,7 +35,16 @@ export default function Player() {
 
 
     useEffect(() => {
-        const currentIndex = index || 0
+        const isLeason = index?.includes('l') 
+        const currentIndex = isLeason ?
+            parseFloat(index.split("-")[1]) :
+            index === undefined ? 0 : index
+
+
+            console.log("currentIndex", currentIndex)
+            console.log("isLeason", isLeason)
+
+
         const initAudio = async () => {
             if (sound) {
                 await sound.stopAsync()
@@ -48,14 +59,35 @@ export default function Player() {
             setLastVersetOfSelectedSurah(sourates[currentIndex]?.versets)
             setCorantText('')
         }
-        initAudio()
+
+        // load selected leason
+        const loadSelectedLeson =  async () => {
+            if (sound) {
+                await sound.stopAsync()
+            }
+            setSound(null)
+            setIsplaying(false)
+            setPlayPauseIcon('play')
+            setCurrentSlide(selectSartVerset)
+            // setCurrentIndex(currentIndex)
+            setSurahNumber(sourates[currentIndex].numero)
+            setSurahTextValue(sourates[currentIndex].nom)
+            // setLastVersetOfSelectedSurah(sourates[currentIndex]?.versets)
+            setCorantText('')
+        }
+        if(isLeason){
+            loadSelectedLeson()
+        }else{
+            initAudio()
+        }
     }, [index])
 
     return (
         <View style={styles.container}>
-            <Rciter />
+            {/* <Rciter /> */}
+            <TopBar />
             <TextContainer />
-            <SourahSelect /> 
+            <SourahSelect />
             <Track />
             <RateInput />
             <SelectVersetb />
