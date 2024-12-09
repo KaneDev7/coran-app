@@ -8,7 +8,6 @@ import { secondary, secondary3 } from '../style/variables';
 
 
 export default function SelectVerset() {
-
     const {
         lastVersetOfSelectedSurah,
         setSelectSartVerset,

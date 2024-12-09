@@ -9,9 +9,9 @@ import { GlobalContext } from '../_layout';
 import { sourates } from '@/constants/sorats.list';
 import SourahSelect from '@/components/SourahSelect'
 import { useLocalSearchParams } from 'expo-router';
-import SelectVersetb from "../../../components/SelectVersetb"
-import VolumeInput from "../../../components/VolumeInput"
-import RateInput from "../../../components/RateInput"
+import SelectVersetb from "@/components/SelectVersetb"
+import VolumeInput from "@/components/VolumeInput"
+import RateInput from "@/components/RateInput"
 
 export default function Player() {
 
@@ -33,6 +33,7 @@ export default function Player() {
 
 
     useEffect(() => {
+        const currentIndex = index || 0
         const initAudio = async () => {
             if (sound) {
                 await sound.stopAsync()
@@ -41,10 +42,10 @@ export default function Player() {
             setIsplaying(false)
             setPlayPauseIcon('play')
             setCurrentSlide(selectSartVerset)
-            setCurrentIndex(index)
-            setSurahNumber(sourates[index].numero)
-            setSurahTextValue(sourates[index].nom)
-            setLastVersetOfSelectedSurah(sourates[index]?.versets)
+            setCurrentIndex(currentIndex)
+            setSurahNumber(sourates[currentIndex].numero)
+            setSurahTextValue(sourates[currentIndex].nom)
+            setLastVersetOfSelectedSurah(sourates[currentIndex]?.versets)
             setCorantText('')
         }
         initAudio()
