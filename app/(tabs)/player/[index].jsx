@@ -11,13 +11,15 @@ import { sourates } from '@/constants/sorats.list';
 import SourahSelect from '@/components/SourahSelect'
 import { useLocalSearchParams } from 'expo-router';
 import SelectVersetb from "@/components/SelectVersetb"
+// import SelectVerset from "../../../components/SelectVerset"
+
 import VolumeInput from "@/components/VolumeInput"
 import RateInput from "@/components/RateInput"
+import { ConfirmDialog } from 'react-native-simple-dialogs';
 
 export default function Player() {
 
     const { index } = useLocalSearchParams()
-    console.log("index", index)
 
     const {
         setIsplaying,
@@ -30,20 +32,17 @@ export default function Player() {
         sound,
         setLastVersetOfSelectedSurah,
         setSurahTextValue,
-        setCorantText
+        setCorantText,
+        connectionError,
+        setConnectionError
     } = useContext(GlobalContext)
 
 
     useEffect(() => {
-        const isLeason = index?.includes('l') 
+        const isLeason = index?.includes('l')
         const currentIndex = isLeason ?
             parseFloat(index.split("-")[1]) :
             index === undefined ? 0 : index
-
-
-            console.log("currentIndex", currentIndex)
-            console.log("isLeason", isLeason)
-
 
         const initAudio = async () => {
             if (sound) {
@@ -61,7 +60,7 @@ export default function Player() {
         }
 
         // load selected leason
-        const loadSelectedLeson =  async () => {
+        const loadSelectedLeson = async () => {
             if (sound) {
                 await sound.stopAsync()
             }
@@ -75,9 +74,9 @@ export default function Player() {
             // setLastVersetOfSelectedSurah(sourates[currentIndex]?.versets)
             setCorantText('')
         }
-        if(isLeason){
+        if (isLeason) {
             loadSelectedLeson()
-        }else{
+        } else {
             initAudio()
         }
     }, [index])
@@ -96,6 +95,25 @@ export default function Player() {
                 <Control />
             </View>
             <StatusBar style="auto" />
+            <ConfirmDialog
+                title="Error de connection"
+                message="Vérifier votre connection internet"
+                visible={connectionError}
+                titleStyle={{ color: "red" }}
+                onTouchOutside={() => {
+                    setIsplaying(false)
+                    setConnectionError(false)
+                    setPlayPauseIcon('play')
+                }}
+                positiveButton={{
+                    title: "OK",
+                    onPress: () => {
+                        setIsplaying(false)
+                        setConnectionError(false)
+                        setPlayPauseIcon('play')
+                    }
+                }}
+            />
         </View>
     )
 }

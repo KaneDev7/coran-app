@@ -18,7 +18,7 @@ const Item = ({ item, index }) => {
         setCorantText
     } = useContext(GlobalContext)
 
-    const iconNmae = reciter === item.title ? 'checkcircle' : 'checkcircleo'
+    const currentIndex = parseFloat(index)
 
     const handleSelcetLeason = async () => {
         if (isPlaying) {
@@ -43,7 +43,7 @@ const Item = ({ item, index }) => {
                     {`Cours: ${index + 1}`}
                 </Text>
                 <Text style={styles.suratText} >
-                    {`${sourates[item.index].nom} | [${item.selectSartVerset} - ${item.selectEndVerset} ]`}
+                    {`${sourates[parseFloat(item.index)]?.nom} | [${item.selectSartVerset} - ${item.selectEndVerset} ]`}
                 </Text>
             </View>
             <Text>
@@ -56,6 +56,8 @@ const Item = ({ item, index }) => {
 
 export default function Leasons() {
     const { leasonList } = useContext(GlobalContext)
+    console.log('leasonList', leasonList)
+
     return (
         <View style={styles.container} >
             <FlatList

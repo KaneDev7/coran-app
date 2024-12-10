@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Slider } from '@miblanchard/react-native-slider';
 import { AppRegistry, StyleSheet, View, Text } from 'react-native';
+import { primary } from '../../style/variables';
 
 export const InputRange = ({ value, setValue = 0.2, max, min }) => {
 
@@ -10,6 +11,10 @@ export const InputRange = ({ value, setValue = 0.2, max, min }) => {
                 maximumValue={max}
                 minimumValue={min}
                 value={value}
+                animateTransitions={true}
+                thumbTintColor={primary}
+                thumbStyle={{width : 20, height: 20}}
+                thumbTouchSize={{width : 30, height: 30}}
                 onValueChange={(newValue) => setValue(newValue[0])}
             />
         </View>
