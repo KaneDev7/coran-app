@@ -1,7 +1,9 @@
+import { useContext } from 'react';
 import { View, FlatList, Text, StyleSheet, Pressable } from 'react-native'
 import { sourates } from '@/constants/sorats.list';
+import { GlobalContext } from './_layout';
 import { primary, secondary, secondary3 } from '@/style/variables'
-import {router } from 'expo-router';
+import { router } from 'expo-router';
 
 
 type Sourate = {
@@ -18,9 +20,9 @@ type ItemProps = {
 
 const Item = ({ item, index }: ItemProps) => {
 
-  
+  const { isLoading } = useContext(GlobalContext)
   return <Pressable
-    style={styles.link}
+    style={{ ...styles.link, pointerEvents: isLoading ? "none" : "auto" }}
     onPress={() => router.push({ pathname: `/player/${index}` as any })}
   >
     <View style={styles.item} >

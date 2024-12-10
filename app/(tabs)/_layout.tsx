@@ -4,6 +4,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import Feather from '@expo/vector-icons/Feather';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -56,7 +58,6 @@ export default function RootLayout() {
 
   let currentVerset = startPlayVerset
 
-  console.log('leasonList', leasonList)
   const getLessons = async () => {
     try {
       const value = await AsyncStorage.getItem('lesson');
@@ -71,26 +72,33 @@ export default function RootLayout() {
 
   const storeLessons = async (value) => {
     try {
-      const jsonValue = JSON.stringify([...leasonList, value]);
+      const jsonValue = JSON.stringify(value);
       await AsyncStorage.setItem('lesson', jsonValue);
     } catch (e) {
       // saving error
     }
   };
 
-  const onSaveLeason = async () => {
-    const newLeason = {
-      selectSartVerset,
-      selectEndVerset,
-      surahNumber,
-      index: currentIndex,
-    }
-    await storeLessons(newLeason)
-    setLeasonList(prev => {
-      return [...prev, newLeason]
-    })
+  const onDeleteLesson = async (id) => {
+    const lessonsFiltred = leasonList.filter(item => item.id !== id)
+    await storeLessons(lessonsFiltred)
+    setLeasonList(lessonsFiltred)
   }
 
+  const onSaveLeason = async () => {
+    const updateLesson = [
+      ...leasonList,
+      {
+        id  : Date.now(),
+        selectSartVerset,
+        selectEndVerset,
+        surahNumber,
+        index: currentIndex,
+      }
+    ]
+    await storeLessons(updateLesson)
+    setLeasonList(updateLesson)
+  }
 
   function onPlaybackStatusUpdate(status) {
     setTimeUpdate(status.positionMillis)
@@ -203,6 +211,7 @@ export default function RootLayout() {
       setRate,
       rate,
       onSaveLeason,
+      onDeleteLesson,
       leasonList,
       connectionError,
       setConnectionError,
@@ -223,19 +232,20 @@ export default function RootLayout() {
       lastVersetOfSelectedSurah
     }}>
 
-      <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
+      <Tabs screenOptions={{ tabBarActiveTintColor: secondary }}>
         <Tabs.Screen
           name="index"
           options={{
             title: 'Sourates',
-            tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+            
+            tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
           }}
         />
         <Tabs.Screen
           name="leasons"
           options={{
             title: "Cours",
-            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
         
           }}
         />
@@ -243,16 +253,16 @@ export default function RootLayout() {
         <Tabs.Screen
           name="player/[index]"
           options={{
-            title: 'player',
+            title: 'Lecture',
             headerShown: false,
-            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="play" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+            tabBarIcon: ({ color, focused }) => <Feather name="airplay" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
           }}
         />
         <Tabs.Screen
           name="reciteurs"
           options={{
             title: 'Réciteurs',
-            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
           }}
         />
 

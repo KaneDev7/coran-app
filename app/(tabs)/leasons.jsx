@@ -1,24 +1,26 @@
 import { View, FlatList, Text, StyleSheet, Pressable } from 'react-native'
 import { primary, secondary, secondary3 } from '@/style/variables';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { GlobalContext } from './_layout';
 import { router } from 'expo-router';
 import { sourates } from '../../constants/sorats.list';
-import { AntDesign } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ConfirmDialog, Dialog } from 'react-native-simple-dialogs';
 
 const Item = ({ item, index }) => {
     const {
-        reciter,
+        isLoading,
         isPlaying,
         setIsplaying,
         setSelectSartVerset,
         setSelectEndVerset,
         setPlayPauseIcon,
         sound,
+        onDeleteLesson,
         setCorantText
     } = useContext(GlobalContext)
 
-    const currentIndex = parseFloat(index)
+    const [dialogVisible, setDialogVisible] = useState(false)
 
     const handleSelcetLeason = async () => {
         if (isPlaying) {
@@ -34,7 +36,7 @@ const Item = ({ item, index }) => {
     }
 
     return <Pressable
-        style={styles.touchableNative}
+    style={{ ...styles.touchableNative, pointerEvents: isLoading ? "none" : "auto" }}
         onPress={handleSelcetLeason}
     >
         <View style={styles.item} >
@@ -46,9 +48,26 @@ const Item = ({ item, index }) => {
                     {`${sourates[parseFloat(item.index)]?.nom} | [${item.selectSartVerset} - ${item.selectEndVerset} ]`}
                 </Text>
             </View>
-            <Text>
-                <AntDesign name="delete" size={20} color="red" />
-            </Text>
+            <Pressable style={{ padding: 5 }} onPress={() => setDialogVisible(true)}>
+                <MaterialCommunityIcons name="delete" size={24} color="#EF5143" />
+            </Pressable>
+            <ConfirmDialog
+                title="Confirmer"
+                message="Voulez vous vraiment supprimer ce cours ?"
+                visible={dialogVisible}
+                onTouchOutside={() => setDialogVisible(false)}
+                positiveButton={{
+                    title: "Suuprimer",
+                    onPress: () => {
+                        onDeleteLesson(item.id)
+                        setDialogVisible(false)
+                    }
+                }}
+                negativeButton={{
+                    title: "Annuler",
+                    onPress: () => setDialogVisible(false)
+                }}
+            />
         </View>
     </Pressable>
 
@@ -56,7 +75,6 @@ const Item = ({ item, index }) => {
 
 export default function Leasons() {
     const { leasonList } = useContext(GlobalContext)
-    console.log('leasonList', leasonList)
 
     return (
         <View style={styles.container} >
@@ -72,6 +90,7 @@ export default function Leasons() {
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
         display: 'flex',
         gap: 10,
         backgroundColor: secondary3,
