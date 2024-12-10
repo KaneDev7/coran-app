@@ -4,7 +4,6 @@ import { reciteurs } from "../../constants/reciteurs";
 import { useContext } from 'react';
 import { GlobalContext } from './_layout';
 import { AntDesign } from '@expo/vector-icons';
-import { router } from 'expo-router';
 
 const Item = ({ item, index }) => {
   const {
@@ -35,7 +34,7 @@ const Item = ({ item, index }) => {
   }
 
   return <Pressable
-    style={{ ...styles.touchableNative, pointerEvents: isLoading || isActive ? "none" : "auto" }}
+    style={{ ...styles.touchableNative, pointerEvents: isLoading && isPlaying ? "none" : "auto" }}
     onPress={handleSelcetRicter}
   >
     <View style={styles.item} >
