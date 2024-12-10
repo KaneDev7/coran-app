@@ -6,23 +6,11 @@ import { primary, secondary, secondary3 } from '@/style/variables'
 import { router } from 'expo-router';
 
 
-type Sourate = {
-  nom: string;
-  versets: number;
-  numero: number;
-}
-
-type ItemProps = {
-  item: Sourate,
-  index: number,
-
-}
-
 const Item = ({ item, index }: ItemProps) => {
 
-  const { isLoading } = useContext(GlobalContext)
+  const { isLoading, isPlaying } = useContext(GlobalContext)
   return <Pressable
-    style={{ ...styles.link, pointerEvents: isLoading ? "none" : "auto" }}
+    style={{ ...styles.link, pointerEvents: isLoading  && isPlaying ? "none" : "auto" }}
     onPress={() => router.push({ pathname: `/player/${index}` as any })}
   >
     <View style={styles.item} >

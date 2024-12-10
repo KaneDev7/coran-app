@@ -30,6 +30,7 @@ export default function Player() {
         setCurrentIndex,
         setSound,
         sound,
+        setIsLoading,
         setLastVersetOfSelectedSurah,
         setSurahTextValue,
         setCorantText,
@@ -50,6 +51,7 @@ export default function Player() {
             }
             setSound(null)
             setIsplaying(false)
+            setIsLoading(false)
             setPlayPauseIcon('play')
             setCurrentSlide(selectSartVerset)
             setCurrentIndex(currentIndex)
@@ -66,6 +68,7 @@ export default function Player() {
             }
             setSound(null)
             setIsplaying(false)
+            setIsLoading(false)
             setPlayPauseIcon('play')
             setCurrentSlide(selectSartVerset)
             // setCurrentIndex(currentIndex)

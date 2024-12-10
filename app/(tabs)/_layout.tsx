@@ -89,7 +89,7 @@ export default function RootLayout() {
     const updateLesson = [
       ...leasonList,
       {
-        id  : Date.now(),
+        id: Date.now(),
         selectSartVerset,
         selectEndVerset,
         surahNumber,
@@ -237,16 +237,8 @@ export default function RootLayout() {
           name="index"
           options={{
             title: 'Sourates',
-            
-            tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
-          }}
-        />
-        <Tabs.Screen
-          name="leasons"
-          options={{
-            title: "Cours",
-            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
-        
+
+            tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
           }}
         />
 
@@ -255,14 +247,23 @@ export default function RootLayout() {
           options={{
             title: 'Lecture',
             headerShown: false,
-            tabBarIcon: ({ color, focused }) => <Feather name="airplay" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
+            tabBarIcon: ({ color, focused }) => <Feather name="airplay" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
           }}
         />
+        <Tabs.Screen
+          name="leasons"
+          options={{
+            title: "Cours",
+            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
+
+          }}
+        />
+
         <Tabs.Screen
           name="reciteurs"
           options={{
             title: 'Réciteurs',
-            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{opacity : focused ? 1 : .4}} color={secondary} />,
+            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
           }}
         />
 
