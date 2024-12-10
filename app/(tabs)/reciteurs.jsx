@@ -34,7 +34,7 @@ const Item = ({ item, index }) => {
   }
 
   return <Pressable
-    style={{ ...styles.touchableNative, pointerEvents: isLoading && isPlaying ? "none" : "auto" }}
+    style={{ ...styles.touchableNative, pointerEvents:( isLoading && isPlaying) || isActive ? "none" : "auto" }}
     onPress={handleSelcetRicter}
   >
     <View style={styles.item} >
