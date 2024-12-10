@@ -36,7 +36,7 @@ export default function Rciter() {
                 visible={dialogVisible}
                 onTouchOutside={() => setDialogVisible(false)}
                 positiveButton={{
-                    title: "YES",
+                    title: "Sauvegarder",
                     onPress: () =>{
                         onSaveLeason()
                         setDialogVisible(false)
@@ -44,7 +44,7 @@ export default function Rciter() {
                     }
                 }}
                 negativeButton={{
-                    title: "NO",
+                    title: "Annuler",
                     onPress: () => setDialogVisible(false)
                 }}
             />

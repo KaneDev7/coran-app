@@ -7,11 +7,11 @@ import {formatTime} from "../helpers"
 
 export default function Track() {
 
-  const {duration,timeUpdate } = useContext(GlobalContext)
+  const {duration,timeUpdate} = useContext(GlobalContext)
   let width = ( timeUpdate / duration)  * windowWidth
 
   const progressStyle = {
-    width:  width <= windowWidth ? width  : windowWidth ,
+    width:  width <= windowWidth ? width  : 0 ,
     height: 5,
     backgroundColor: secondary,
     position: 'absolute',

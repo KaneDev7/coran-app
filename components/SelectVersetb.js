@@ -4,6 +4,7 @@ import { View, StyleSheet, Text } from 'react-native'
 import { GlobalContext } from '../app/(tabs)/_layout'
 import DropDownPicker from 'react-native-dropdown-picker';
 import { windowWidth } from '../style';
+import { ConfirmDialog } from 'react-native-simple-dialogs';
 
 
 const DropdownComponent = () => {
@@ -13,6 +14,7 @@ const DropdownComponent = () => {
         setSelectSartVerset,
         setSelectEndVerset,
         selectEndVerset,
+        selectSartVerset,
         currentSlide,
         setCurrentSlide,
         isPlaying,
@@ -21,6 +23,7 @@ const DropdownComponent = () => {
     const [versets, setVersets] = useState([])
     const [openSelectStartVerset, setOpenSelectStartVerset] = useState(false);
     const [openSelectEndtVerset, setOpenSelectEndtVerset] = useState(false);
+    const [dialogVisible, setDialogVisible] = useState(false)
 
     useEffect(() => {
         const versetsArray = []
@@ -34,77 +37,55 @@ const DropdownComponent = () => {
 
     return (
         <View style={styles.selectAyahContent}>
-{/* 
-            <Dropdown
-                style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                inputSearchStyle={styles.inputSearchStyle}
-                iconStyle={styles.iconStyle}
-                data={versets}
-                disable={isPlaying}
-                maxHeight={300}
-                placeholder={`v-${currentSlide}`}
-                dropdownPosition='top'
-                valueField={"ffdfd"}
-                inverted={false}
-                value={currentSlide}
-                onChange={item => {
-                    // setValue(item);
-                    setSelectSartVerset(item)
-                    setCurrentSlide(item)
-                }}
-                renderItem={renderItem}
-            /> */}
-
             <DropDownPicker
-                // style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
                 open={openSelectStartVerset}
                 setOpen={setOpenSelectStartVerset}
                 items={versets}
                 disabled={isPlaying}
                 placeholder={currentSlide}
-                value={currentSlide}
+                // value={currentSlide}
                 disabledStyle={true}
-                containerStyle={{width : windowWidth / 3}}
-                textStyle={{fontSize : 17 }}
+                containerStyle={{ width: windowWidth / 4, opacity: isPlaying ? .6 : 1 }}
+                textStyle={{ fontSize: 17 }}
                 onSelectItem={item => {
+                    if (item.value > selectEndVerset) {
+                        setSelectSartVerset(item.value)
+                        return setDialogVisible(true)
+                    }
                     setSelectSartVerset(item.value)
                     setCurrentSlide(item.value)
                 }}
             />
-            {/* <Dropdown
-                style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                inputSearchStyle={styles.inputSearchStyle}
-                iconStyle={styles.iconStyle}
-                data={versets}
-                disable={isPlaying}
-                maxHeight={300}
-                dropdownPosition='top'
-                inverted={false}
-                placeholder={`v-${selectEndVerset}`}
-                value={selectEndVerset}
-                onChange={item => {
-                    setSelectEndVerset(item)
-                }}
-                renderItem={renderItem}
-            /> */}
-
             <DropDownPicker
-                // style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
                 open={openSelectEndtVerset}
                 setOpen={setOpenSelectEndtVerset}
                 items={versets}
                 disabled={isPlaying}
                 placeholder={selectEndVerset}
-                textStyle={{fontSize : 17 }}
-                value={selectEndVerset}
-                containerStyle={{width : windowWidth / 3}}
+                textStyle={{ fontSize: 17 }}
+                // value={selectEndVerset}
+                containerStyle={{ width: windowWidth / 4, opacity: isPlaying ? .6 : 1 }}
                 onSelectItem={item => {
+                    if (item.value < selectSartVerset) {
+                        setSelectEndVerset(selectSartVerset)
+                        return setDialogVisible(true)
+                    }
                     setSelectEndVerset(item.value)
                 }}
+            />
+
+            <ConfirmDialog
+                title="Impossible"
+                message={`le verset de debut doit etre inférieur au verset de fin`}
+                visible={dialogVisible}
+                onTouchOutside={() => setDialogVisible(false)}
+                positiveButton={{
+                    title: "Ok",
+                    onPress: () => {
+                        setDialogVisible(false)
+                    }
+                }}
+
             />
         </View>
 

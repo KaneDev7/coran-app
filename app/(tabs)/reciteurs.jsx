@@ -16,11 +16,12 @@ const Item = ({ item, index }) => {
     selectSartVerset,
     setPlayPauseIcon,
     sound,
-    currentIndex,
+    isLoading,
     setCorantText
   } = useContext(GlobalContext)
 
-  const iconNmae = reciter === item.title ? 'checkcircle' : 'checkcircleo'
+  const isActive = reciter === item.title
+  const iconNmae = isActive ? 'checkcircle' : 'checkcircleo'
 
   const handleSelcetRicter = async () => {
     if (isPlaying) {
@@ -34,7 +35,7 @@ const Item = ({ item, index }) => {
   }
 
   return <Pressable
-    style={styles.touchableNative}
+    style={{ ...styles.touchableNative, pointerEvents: isLoading || isActive ? "none" : "auto" }}
     onPress={handleSelcetRicter}
   >
     <View style={styles.item} >
