@@ -8,7 +8,7 @@ export async function getCoranText(n) {
             text = data.data.text
         });
     } catch (error) {
-        console.log(error)
+       throw new  Error(error.message)
     }
    return text
   }

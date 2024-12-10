@@ -3,10 +3,8 @@ import { View, StyleSheet } from 'react-native'
 import { FontAwesome5 } from '@expo/vector-icons';
 import { windowWidth } from '../style'
 import { primary } from '../style/variables';
-import { GlobalContext } from '../app/(tabs)/_layout'
+import { GlobalContext } from '@/app/(tabs)/_layout'
 import { router } from 'expo-router';
-
-
 const iconSize = 30
 
 export default function Control() {
@@ -78,6 +76,5 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 50,
-    marginVertical: 15,
   }
 })

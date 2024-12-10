@@ -31,9 +31,6 @@ const Item = ({ item, index }) => {
     setPlayPauseIcon('play')
     setCurrentSlide(selectSartVerset)
     setCorantText('')
-    setTimeout(() => {
-      router.push({ pathname: `player/${currentIndex}` })
-    }, 1000)
   }
 
   return <Pressable

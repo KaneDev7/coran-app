@@ -2,6 +2,9 @@ import { Dropdown } from 'react-native-element-dropdown';
 import React, { useContext, useEffect, useState } from 'react'
 import { View, StyleSheet, Text } from 'react-native'
 import { GlobalContext } from '../app/(tabs)/_layout'
+import DropDownPicker from 'react-native-dropdown-picker';
+import { windowWidth } from '../style';
+
 
 const DropdownComponent = () => {
 
@@ -16,31 +19,24 @@ const DropdownComponent = () => {
     } = useContext(GlobalContext)
 
     const [versets, setVersets] = useState([])
+    const [openSelectStartVerset, setOpenSelectStartVerset] = useState(false);
+    const [openSelectEndtVerset, setOpenSelectEndtVerset] = useState(false);
 
     useEffect(() => {
         const versetsArray = []
         for (let index = 1; index <= lastVersetOfSelectedSurah; index++) {
-            versetsArray.push(index)
+            versetsArray.push({ label: `v-${index}`, value: index })
         }
         setVersets(versetsArray)
         setSelectSartVerset(1)
         setSelectEndVerset(versetsArray.length)
     }, [lastVersetOfSelectedSurah])
 
-
-    const renderItem = item => {
-        return (
-            <View style={styles.item}>
-                <Text style={styles.textItem}>{item}</Text>
-            </View>
-        );
-    };
-
     return (
         <View style={styles.selectAyahContent}>
-
+{/* 
             <Dropdown
-                style={styles.dropdown}
+                style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
                 placeholderStyle={styles.placeholderStyle}
                 selectedTextStyle={styles.selectedTextStyle}
                 inputSearchStyle={styles.inputSearchStyle}
@@ -48,8 +44,9 @@ const DropdownComponent = () => {
                 data={versets}
                 disable={isPlaying}
                 maxHeight={300}
-                placeholder={currentSlide}
+                placeholder={`v-${currentSlide}`}
                 dropdownPosition='top'
+                valueField={"ffdfd"}
                 inverted={false}
                 value={currentSlide}
                 onChange={item => {
@@ -58,9 +55,26 @@ const DropdownComponent = () => {
                     setCurrentSlide(item)
                 }}
                 renderItem={renderItem}
+            /> */}
+
+            <DropDownPicker
+                // style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
+                open={openSelectStartVerset}
+                setOpen={setOpenSelectStartVerset}
+                items={versets}
+                disabled={isPlaying}
+                placeholder={currentSlide}
+                value={currentSlide}
+                disabledStyle={true}
+                containerStyle={{width : windowWidth / 3}}
+                textStyle={{fontSize : 17 }}
+                onSelectItem={item => {
+                    setSelectSartVerset(item.value)
+                    setCurrentSlide(item.value)
+                }}
             />
-            <Dropdown
-                style={styles.dropdown}
+            {/* <Dropdown
+                style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
                 placeholderStyle={styles.placeholderStyle}
                 selectedTextStyle={styles.selectedTextStyle}
                 inputSearchStyle={styles.inputSearchStyle}
@@ -70,12 +84,27 @@ const DropdownComponent = () => {
                 maxHeight={300}
                 dropdownPosition='top'
                 inverted={false}
-                placeholder={selectEndVerset}
+                placeholder={`v-${selectEndVerset}`}
                 value={selectEndVerset}
                 onChange={item => {
                     setSelectEndVerset(item)
                 }}
                 renderItem={renderItem}
+            /> */}
+
+            <DropDownPicker
+                // style={{ ...styles.dropdown, opacity: isPlaying ? .7 : 1 }}
+                open={openSelectEndtVerset}
+                setOpen={setOpenSelectEndtVerset}
+                items={versets}
+                disabled={isPlaying}
+                placeholder={selectEndVerset}
+                textStyle={{fontSize : 17 }}
+                value={selectEndVerset}
+                containerStyle={{width : windowWidth / 3}}
+                onSelectItem={item => {
+                    setSelectEndVerset(item.value)
+                }}
             />
         </View>
 
@@ -89,7 +118,8 @@ const styles = StyleSheet.create({
         flex: 1,
         display: 'flex',
         flexDirection: "row",
-        gap: 30
+        gap: 30,
+
     },
     dropdown: {
         margin: 0,
@@ -107,7 +137,7 @@ const styles = StyleSheet.create({
 
         elevation: 2,
     },
-  
+
     item: {
         padding: 10,
         flexDirection: 'row',

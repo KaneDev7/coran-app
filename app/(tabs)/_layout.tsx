@@ -1,8 +1,10 @@
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, Tabs } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -16,6 +18,7 @@ import { Audio } from 'expo-av';
 import { convertSelectVerset } from '@/helpers';
 import { getCoranText } from '@/services/coranText';
 import { sourates } from '@/constants/sorats.list';
+import { primary, secondary } from '@/style/variables';
 
 export const GlobalContext = createContext()
 
@@ -46,10 +49,47 @@ export default function RootLayout() {
   const [reciter, setReciter] = useState('aymanswoaid')
   const [duration, setDuration] = useState(0)
   const [timeUpdate, setTimeUpdate] = useState(0)
-  const [volume, setVolume] = useState(0.2)
+  const [volume, setVolume] = useState(0.8)
   const [rate, setRate] = useState(1)
+  const [leasonList, setLeasonList] = useState([])
+  const [connectionError, setConnectionError] = useState(false)
 
   let currentVerset = startPlayVerset
+
+  console.log('leasonList', leasonList)
+  const getLessons = async () => {
+    try {
+      const value = await AsyncStorage.getItem('lesson');
+      if (value !== null) {
+        // value previously stored
+        setLeasonList(JSON.parse(value))
+      }
+    } catch (e) {
+      // error reading value
+    }
+  };
+
+  const storeLessons = async (value) => {
+    try {
+      const jsonValue = JSON.stringify([...leasonList, value]);
+      await AsyncStorage.setItem('lesson', jsonValue);
+    } catch (e) {
+      // saving error
+    }
+  };
+
+  const onSaveLeason = async () => {
+    const newLeason = {
+      selectSartVerset,
+      selectEndVerset,
+      surahNumber,
+      index: currentIndex,
+    }
+    await storeLessons(newLeason)
+    setLeasonList(prev => {
+      return [...prev, newLeason]
+    })
+  }
 
 
   function onPlaybackStatusUpdate(status) {
@@ -77,6 +117,9 @@ export default function RootLayout() {
   async function playSound(url) {
     getCoranText(currentVerset).then(text => {
       setCorantText(text)
+    }).catch(error => {
+      if (error.message === "Failed to fetch")
+        setConnectionError(true)
     })
 
     const { sound, status } = await Audio.Sound.createAsync(
@@ -109,13 +152,13 @@ export default function RootLayout() {
   }, [sound]);
 
   useEffect(() => {
-    if(sound){
+    if (sound) {
       sound.setVolumeAsync(volume)
     }
   }, [sound, volume]);
 
   useEffect(() => {
-    if(sound){
+    if (sound) {
       sound.setRateAsync(rate, true)
     }
   }, [sound, rate]);
@@ -125,6 +168,11 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+
+  useEffect(() => {
+    getLessons()
+  }, [])
 
   if (!loaded) {
     return null;
@@ -154,6 +202,10 @@ export default function RootLayout() {
       setIsLoading,
       setRate,
       rate,
+      onSaveLeason,
+      leasonList,
+      connectionError,
+      setConnectionError,
       setReciter,
       sound,
       reciter,
@@ -171,23 +223,40 @@ export default function RootLayout() {
       lastVersetOfSelectedSurah
     }}>
 
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          // tabBarButton: HapticTab,
-          tabBarBackground: TabBarBackground,
-          tabBarStyle: Platform.select({
-            ios: {
-              // Use a transparent background on iOS to show the blur effect
-              position: 'absolute',
-            },
-            default: {},
-          }),
-        }}>
+      <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Sourates',
+            tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+          }}
+        />
+        <Tabs.Screen
+          name="leasons"
+          options={{
+            title: "Cours",
+            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+        
+          }}
+        />
 
-      </Stack>
+        <Tabs.Screen
+          name="player/[index]"
+          options={{
+            title: 'player',
+            headerShown: false,
+            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="play" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+          }}
+        />
+        <Tabs.Screen
+          name="reciteurs"
+          options={{
+            title: 'Réciteurs',
+            tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{opacity : focused ? 1 : .5}} color={secondary} />,
+          }}
+        />
 
-
+      </Tabs>
       <StatusBar style="auto" />
     </GlobalContext.Provider>
   );

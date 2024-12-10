@@ -7,15 +7,15 @@ import { Link, router } from 'expo-router';
 
 export default function SourahSelect() {
 
-    const {surahTextValue } = useContext(GlobalContext)
+    const { surahTextValue } = useContext(GlobalContext)
     return (
-            <Pressable
+        <Pressable
             onPress={() => router.push('/')}
-                style={styles.container}
-            >
-                <Text style={styles.text} > {surahTextValue} </Text>
-                <Entypo name="select-arrows" size={15} color={primary} />
-            </Pressable>
+            style={styles.container}
+        >
+            <Text style={styles.text} > {surahTextValue} </Text>
+            <Entypo name="select-arrows" size={15} color={primary} />
+        </Pressable>
     )
 }
 
@@ -29,10 +29,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: secondary2,
         padding: 5,
-        marginVertical : 10
+        marginVertical: 10
     },
     text: {
-        fontSize: 20,
+        fontSize: 15,
         color: primary,
         textTransform: 'capitalize'
     }
