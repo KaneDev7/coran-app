@@ -2,15 +2,13 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text } from 'react-native';
 import TextContainer from '@/components/TextContainer';
 import Track from '@/components/Track';
-import Rciter from '@/components/Rciter';
 import TopBar from '@/components/TopBar';
 import Control from '@/components/Control';
 import { useContext, useEffect } from 'react';
 import { GlobalContext } from '../_layout';
-import { sourates } from '@/constants/sorats.list';
 import SourahSelect from '@/components/SourahSelect'
 import { useLocalSearchParams } from 'expo-router';
-import SelectVersetb from "@/components/SelectVersetb"
+import SelectVerset from "@/components/SelectVerset"
 // import SelectVerset from "../../../components/SelectVerset"
 
 import VolumeInput from "@/components/VolumeInput"
@@ -23,64 +21,23 @@ export default function Player() {
 
     const {
         setIsplaying,
-        setCurrentSlide,
-        selectSartVerset,
         setPlayPauseIcon,
-        setSurahNumber,
         setCurrentIndex,
-        setSound,
-        sound,
-        setIsLoading,
-        setLastVersetOfSelectedSurah,
-        setSurahTextValue,
-        setCorantText,
+        initAudio,
         connectionError,
         setConnectionError
     } = useContext(GlobalContext)
 
 
     useEffect(() => {
-        const isLeason = index?.includes('l')
-        const currentIndex = isLeason ?
+        const isLesson = index?.includes('l')
+        const currentIndex = isLesson ?
             parseFloat(index.split("-")[1]) :
             index === undefined ? 0 : index
-
-        const initAudio = async () => {
-            if (sound) {
-                await sound.stopAsync()
-            }
-            setSound(null)
-            setIsplaying(false)
-            setIsLoading(false)
-            setPlayPauseIcon('play')
-            setCurrentSlide(selectSartVerset)
+        if (!isLesson) {
+            initAudio(currentIndex)
+        } else{
             setCurrentIndex(currentIndex)
-            setSurahNumber(sourates[currentIndex].numero)
-            setSurahTextValue(sourates[currentIndex].nom)
-            setLastVersetOfSelectedSurah(sourates[currentIndex]?.versets)
-            setCorantText('')
-        }
-
-        // load selected leason
-        const loadSelectedLeson = async () => {
-            if (sound) {
-                await sound.stopAsync()
-            }
-            setSound(null)
-            setIsplaying(false)
-            setIsLoading(false)
-            setPlayPauseIcon('play')
-            setCurrentSlide(selectSartVerset)
-            // setCurrentIndex(currentIndex)
-            setSurahNumber(sourates[currentIndex].numero)
-            setSurahTextValue(sourates[currentIndex].nom)
-            // setLastVersetOfSelectedSurah(sourates[currentIndex]?.versets)
-            setCorantText('')
-        }
-        if (isLeason) {
-            loadSelectedLeson()
-        } else {
-            initAudio()
         }
     }, [index])
 
@@ -92,7 +49,7 @@ export default function Player() {
             <SourahSelect />
             <Track />
             <RateInput />
-            <SelectVersetb />
+            <SelectVerset />
             <VolumeInput />
             <View style={styles.container}>
                 <Control />

@@ -9,7 +9,6 @@ import Feather from '@expo/vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import TabBarBackground from '@/components/ui/TabBarBackground';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -48,24 +47,39 @@ export default function RootLayout() {
   const [isLoading, setIsLoading] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(selectSartVerset)
   const [surahTextValue, setSurahTextValue] = useState(sourates[0].nom)
-  const [reciter, setReciter] = useState('aymanswoaid')
   const [duration, setDuration] = useState(0)
   const [timeUpdate, setTimeUpdate] = useState(0)
   const [volume, setVolume] = useState(0.8)
   const [rate, setRate] = useState(1)
   const [leasonList, setLeasonList] = useState([])
   const [connectionError, setConnectionError] = useState(false)
+  const [reciter, setReciter] = useState("aymanswoaid")
+  const [isPause, setIsPause] = useState(false)
+
+  const disabled = isPlaying || isPause
 
   let currentVerset = startPlayVerset
-
   const getLessons = async () => {
     try {
-      const value = await AsyncStorage.getItem('lesson');
+      const value = await AsyncStorage.getItem('lesson') || []
       if (value !== null) {
         // value previously stored
         setLeasonList(JSON.parse(value))
       }
     } catch (e) {
+      // error reading value
+    }
+  };
+
+  const getReciter = async () => {
+    try {
+      const value = await AsyncStorage.getItem('reciter') || "aymanswoaid"
+      if (value !== null) {
+        // value previously stored
+        setReciter(value)
+      }
+    } catch (e) {
+      setReciter("aymanswoaid")
       // error reading value
     }
   };
@@ -78,6 +92,17 @@ export default function RootLayout() {
       // saving error
     }
   };
+
+
+  const storeReciter = async (value) => {
+    try {
+      await AsyncStorage.setItem('reciter', value);
+    } catch (e) {
+      return ""
+      // saving error
+    }
+  };
+
 
   const onDeleteLesson = async (id) => {
     const lessonsFiltred = leasonList.filter(item => item.id !== id)
@@ -100,12 +125,67 @@ export default function RootLayout() {
     setLeasonList(updateLesson)
   }
 
+  const onSelectReciter = async (value) => {
+    await storeReciter(value)
+    setReciter(value)
+  }
+
+  async function loadSelectAudio(surahNumber, selectVerst) {
+    const startPlayVersetUpdate = convertSelectVerset({ surahNumber, selectedValue: selectVerst.start })
+    const endPlayVersetUpdate = convertSelectVerset({ surahNumber, selectedValue: selectVerst.end })
+
+    setStartPlayVerset(startPlayVersetUpdate)
+    setEndPlayVerset(endPlayVersetUpdate)
+    setStartUrl(`https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${startPlayVersetUpdate}.mp3`)
+  }
+
+  async function initParams() {
+    if (sound) await sound.stopAsync()
+    setSound(null)
+    setIsFirstStart(true)
+    setIsplaying(false)
+    setIsLoading(false)
+    setIsPause(false)
+    setPlayPauseIcon('play')
+    setCorantText('')
+  }
+
+  async function loadSelectLesson(item) {
+    const { selectSartVerset, selectEndVerset, index, surahNumber } = item
+    await initParams()
+    loadSelectAudio(
+      surahNumber,
+      {
+        start: selectSartVerset,
+        end: selectEndVerset
+      })
+    setSelectSartVerset(selectSartVerset)
+    setSelectEndVerset(selectEndVerset)
+    setCurrentSlide(selectSartVerset)
+    setSurahTextValue(sourates[index].nom)
+    setSurahNumber(sourates[index].numero)
+  }
+
+
+  const loadNewSound = async (index) => {
+    await initParams()
+    setCurrentSlide(selectSartVerset)
+    setSurahTextValue(sourates[index].nom)
+    setSurahNumber(sourates[index].numero)
+  }
+
+  const initAudio = async (index) => {
+    await loadNewSound(index)
+    setCurrentIndex(index)
+    setCurrentSlide(1)
+    setLastVersetOfSelectedSurah(sourates[index]?.versets)
+  }
+
   function onPlaybackStatusUpdate(status) {
     setTimeUpdate(status.positionMillis)
     setIsLoading(!status.isPlaying)
 
     if (status.didJustFinish) {
-      //update slide
       setCurrentSlide(v => v >= selectEndVerset ? selectSartVerset : v + 1)
 
       //update currentVerset
@@ -125,9 +205,12 @@ export default function RootLayout() {
   async function playSound(url) {
     getCoranText(currentVerset).then(text => {
       setCorantText(text)
-    }).catch(error => {
-      if (error.message === "Failed to fetch")
+    }).catch( async error => {
+      if (error.message === "Failed to fetch"){
+        await initAudio(currentIndex)
         setConnectionError(true)
+      }
+       
     })
 
     const { sound, status } = await Audio.Sound.createAsync(
@@ -141,18 +224,20 @@ export default function RootLayout() {
     setSound(sound)
   }
 
-  useEffect(() => {
-    const startPlayVersetUpdate = convertSelectVerset({ surahNumber, selectedValue: selectSartVerset })
-    const endPlayVersetUpdate = convertSelectVerset({ surahNumber, selectedValue: selectEndVerset })
 
-    setStartPlayVerset(startPlayVersetUpdate)
-    setEndPlayVerset(endPlayVersetUpdate)
-    setStartUrl(`https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${startPlayVersetUpdate}.mp3`)
+  useEffect(() => {
+    loadSelectAudio(
+      surahNumber,
+      {
+        start: selectSartVerset,
+        end: selectEndVerset
+      })
 
   }, [selectSartVerset, selectEndVerset, surahNumber, reciter]);
 
 
   useEffect(() => {
+
     sound ? async () => {
       console.log('Unloading Sound');
       await sound.unloadAsync();
@@ -180,6 +265,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     getLessons()
+    getReciter()
   }, [])
 
   if (!loaded) {
@@ -203,13 +289,21 @@ export default function RootLayout() {
       setSelectSartVerset,
       setSelectEndVerset,
       playSound,
+      setIsPause,
+      isPause,
       setSound,
       volume,
       setVolume,
+      initParams,
+      loadNewSound,
+      loadSelectLesson,
+      initAudio,
+      disabled,
       isLoading,
       setIsLoading,
       setRate,
       rate,
+      onSelectReciter,
       onSaveLeason,
       onDeleteLesson,
       leasonList,
@@ -245,7 +339,7 @@ export default function RootLayout() {
         <Tabs.Screen
           name="player/[index]"
           options={{
-            title: 'Lecture',
+            title: 'Ecouter',
             headerShown: false,
             tabBarIcon: ({ color, focused }) => <Feather name="airplay" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
           }}

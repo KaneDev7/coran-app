@@ -49,8 +49,6 @@ const style = StyleSheet.create({
      
     },
     progressDot:{
-      // width: 10,
-      // height: 10,
       backgroundColor: secondary,
       borderRadius: 100,
       position: 'absolute',

@@ -4,33 +4,27 @@ import { reciteurs } from "../../constants/reciteurs";
 import { useContext } from 'react';
 import { GlobalContext } from './_layout';
 import { AntDesign } from '@expo/vector-icons';
+import { ScrollView } from 'react-native-web';
+import { router } from 'expo-router';
 
 const Item = ({ item, index }) => {
   const {
-    setReciter,
     reciter,
     isPlaying,
-    setIsplaying,
     setCurrentSlide,
     selectSartVerset,
-    setPlayPauseIcon,
-    sound,
+    initParams,
+    onSelectReciter,
     isLoading,
-    setCorantText
   } = useContext(GlobalContext)
 
   const isActive = reciter === item.title
   const iconNmae = isActive ? 'checkcircle' : 'checkcircleo'
 
   const handleSelcetRicter = async () => {
-    if (isPlaying) {
-      await sound.stopAsync()
-    }
-    setIsplaying(false)
-    setReciter(item.title)
-    setPlayPauseIcon('play')
+    onSelectReciter(item.title)
+    await initParams()
     setCurrentSlide(selectSartVerset)
-    setCorantText('')
   }
 
   return <Pressable
@@ -57,13 +51,13 @@ const Item = ({ item, index }) => {
 
 export default function Reciteurs() {
   return (
-    <View style={styles.container} >
+    <ScrollView style={styles.container} >
       <FlatList
         data={reciteurs}
         renderItem={({ item, index }) => <Item index={index} item={item} />}
-        keyExtractor={item => item.numero}
+        keyExtractor={(item, index) => index}
       />
-    </View>
+    </ScrollView>
   )
 }
 

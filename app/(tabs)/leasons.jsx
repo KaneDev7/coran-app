@@ -6,37 +6,24 @@ import { router } from 'expo-router';
 import { sourates } from '../../constants/sorats.list';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ConfirmDialog, Dialog } from 'react-native-simple-dialogs';
+import { ScrollView } from 'react-native-web';
 
 const Item = ({ item, index }) => {
     const {
         isLoading,
         isPlaying,
-        setIsplaying,
-        setSelectSartVerset,
-        setSelectEndVerset,
-        setPlayPauseIcon,
-        sound,
         onDeleteLesson,
-        setCorantText
+        loadSelectLesson,
     } = useContext(GlobalContext)
 
     const [dialogVisible, setDialogVisible] = useState(false)
-
     const handleSelcetLeason = async () => {
-        if (isPlaying) {
-            await sound.stopAsync()
-        }
         router.push({ pathname: `player/l-${item.index}` })
-        setIsplaying(false)
-        setSelectSartVerset(item.selectSartVerset)
-        setSelectEndVerset(item.selectEndVerset)
-        setPlayPauseIcon('play')
-        // setCurrentSlide(item.selectSartVerset)
-        setCorantText('')
+        loadSelectLesson (item)
     }
 
     return <Pressable
-    style={{ ...styles.touchableNative, pointerEvents: isLoading && isPlaying ? "none" : "auto" }}
+        style={{ ...styles.touchableNative, pointerEvents: isLoading && isPlaying ? "none" : "auto" }}
         onPress={handleSelcetLeason}
     >
         <View style={styles.item} >
@@ -77,13 +64,13 @@ export default function Leasons() {
     const { leasonList } = useContext(GlobalContext)
 
     return (
-        <View style={styles.container} >
+        <ScrollView style={styles.container} >
             <FlatList
                 data={leasonList}
                 renderItem={({ item, index }) => <Item index={index} item={item} />}
-                keyExtractor={item => item.numero}
+                keyExtractor={(item, index) => index}
             />
-        </View>
+        </ScrollView>
     )
 }
 

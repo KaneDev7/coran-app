@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { View, FlatList, Text, StyleSheet, Pressable } from 'react-native'
+import { View, FlatList, Text, StyleSheet, Pressable, ScrollView } from 'react-native'
 import { sourates } from '@/constants/sorats.list';
 import { GlobalContext } from './_layout';
 import { primary, secondary, secondary3 } from '@/style/variables'
@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 const Item = ({ item, index }: ItemProps) => {
 
   const { isLoading, isPlaying } = useContext(GlobalContext)
+  
   return <Pressable
     style={{ ...styles.link, pointerEvents: isLoading  && isPlaying ? "none" : "auto" }}
     onPress={() => router.push({ pathname: `/player/${index}` as any })}
@@ -27,13 +28,13 @@ const Item = ({ item, index }: ItemProps) => {
 
 export default function Sourates() {
   return (
-    <View style={styles.container} >
+    <ScrollView style={styles.container} >
       <FlatList
         data={sourates}
         renderItem={({ item, index }) => <Item index={index} item={item} />}
         keyExtractor={item => item.numero.toString()}
       />
-    </View>
+    </ScrollView>
   )
 }
 

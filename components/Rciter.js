@@ -7,14 +7,8 @@ import { Entypo } from '@expo/vector-icons';
 
 
 export default function Rciter() {
-
-    const {
-        reciter,
-    } = useContext(GlobalContext)
-
-
+    const { reciter} = useContext(GlobalContext)
     return (
-
         <Link href="/reciteurs">
             <View
                 style={styles.reciter}

@@ -5,6 +5,7 @@ import { windowWidth } from '../style'
 import { primary } from '../style/variables';
 import { GlobalContext } from '@/app/(tabs)/_layout'
 import { router } from 'expo-router';
+import { sourates } from '../constants/sorats.list';
 const iconSize = 30
 
 export default function Control() {
@@ -20,48 +21,58 @@ export default function Control() {
     setCurrentSlide,
     selectSartVerset,
     isFirstStart,
+    setIsPause,
     currentIndex,
     isLoading,
+    initParams,
     sound,
   } = useContext(GlobalContext)
 
 
-  const handlePlyaSong = async () => {
-    let toggleIcon = !isPlaying ? 'stop' : 'play'
+  const handleStop = async () => {
+    await initParams()
+    setCurrentSlide(selectSartVerset)
+  }
+
+  const handlePlayAndPause = async () => {
+    let toggleIcon = !isPlaying ? 'pause' : 'play'
     setIsFirstStart(false)
     setIsplaying(v => !v)
     setPlayPauseIcon(toggleIcon)
-    setCurrentSlide(selectSartVerset)
     if (!isFirstStart) {
       if (isPlaying) {
-        await sound.stopAsync()
+        await sound.pauseAsync()
+        setIsPause(true)
       } else {
-        playSound(startUrl)
+        await sound.playAsync()
+        setIsPause(false)
       }
     } else {
+      setIsPause(false)
       playSound(startUrl)
     }
   }
 
   const handleNext = async () => {
-    const index = parseFloat(currentIndex) + 1
-    router.push({ pathname: `/player/${index}`})
+    const index = sourates.length - 1 > currentIndex ? parseFloat(currentIndex) + 1 : 0
+    router.push({ pathname: `/player/${index}` })
   }
 
   const handlePrev = async () => {
-    const index = parseFloat(currentIndex) - 1
-    router.push({ pathname: `/player/${index}`})
+    const index = currentIndex > 0 ? parseFloat(currentIndex) - 1 : sourates.length - 1
+    router.push({ pathname: `/player/${index}` })
   }
 
   return (
     <View
       style={{
-        pointerEvents:  isLoading && isPlaying? "none" : 'auto',
-        opacity:  isLoading && isPlaying ? "0.5" : '1',
+        pointerEvents: isLoading && isPlaying ? "none" : 'auto',
+        opacity: isLoading && isPlaying ? "0.5" : '1',
         ...style.controlConatiner
       }} >
       <FontAwesome5 onPress={handlePrev} name={'backward'} size={30} color={primary} />
-      <FontAwesome5 onPress={handlePlyaSong} name={playPauseIcon} size={iconSize} color={primary} />
+      <FontAwesome5 onPress={handlePlayAndPause} name={playPauseIcon} size={iconSize} color={primary} />
+      <FontAwesome5 onPress={handleStop} name={"stop"} size={iconSize} color={primary} />
       <FontAwesome5 onPress={handleNext} name={'forward'} size={30} color={primary} />
     </View>
   )
