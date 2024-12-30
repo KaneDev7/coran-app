@@ -51,7 +51,7 @@ export default function RootLayout() {
   const [timeUpdate, setTimeUpdate] = useState(0)
   const [volume, setVolume] = useState(0.8)
   const [rate, setRate] = useState(1)
-  const [leasonList, setLeasonList] = useState([])
+  const [lessonList, setlessonList] = useState([])
   const [connectionError, setConnectionError] = useState(false)
   const [reciter, setReciter] = useState("aymanswoaid")
   const [isPause, setIsPause] = useState(false)
@@ -64,7 +64,7 @@ export default function RootLayout() {
       const value = await AsyncStorage.getItem('lesson') || []
       if (value !== null) {
         // value previously stored
-        setLeasonList(JSON.parse(value))
+        setlessonList(JSON.parse(value))
       }
     } catch (e) {
       // error reading value
@@ -84,7 +84,7 @@ export default function RootLayout() {
     }
   };
 
-  const storeLessons = async (value) => {
+  const storeLessons = async (value: string) => {
     try {
       const jsonValue = JSON.stringify(value);
       await AsyncStorage.setItem('lesson', jsonValue);
@@ -94,7 +94,7 @@ export default function RootLayout() {
   };
 
 
-  const storeReciter = async (value) => {
+  const storeReciter = async (value: string) => {
     try {
       await AsyncStorage.setItem('reciter', value);
     } catch (e) {
@@ -105,14 +105,14 @@ export default function RootLayout() {
 
 
   const onDeleteLesson = async (id) => {
-    const lessonsFiltred = leasonList.filter(item => item.id !== id)
+    const lessonsFiltred = lessonList.filter(item => item.id !== id)
     await storeLessons(lessonsFiltred)
-    setLeasonList(lessonsFiltred)
+    setlessonList(lessonsFiltred)
   }
 
   const onSaveLeason = async () => {
     const updateLesson = [
-      ...leasonList,
+      ...lessonList,
       {
         id: Date.now(),
         selectSartVerset,
@@ -122,7 +122,7 @@ export default function RootLayout() {
       }
     ]
     await storeLessons(updateLesson)
-    setLeasonList(updateLesson)
+    setlessonList(updateLesson)
   }
 
   const onSelectReciter = async (value) => {
@@ -205,12 +205,12 @@ export default function RootLayout() {
   async function playSound(url) {
     getCoranText(currentVerset).then(text => {
       setCorantText(text)
-    }).catch( async error => {
-      if (error.message === "Failed to fetch"){
+    }).catch(async error => {
+      if (error.message === "Failed to fetch") {
         await initAudio(currentIndex)
         setConnectionError(true)
       }
-       
+
     })
 
     const { sound, status } = await Audio.Sound.createAsync(
@@ -306,7 +306,7 @@ export default function RootLayout() {
       onSelectReciter,
       onSaveLeason,
       onDeleteLesson,
-      leasonList,
+      lessonList,
       connectionError,
       setConnectionError,
       setReciter,
@@ -335,6 +335,15 @@ export default function RootLayout() {
             tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
           }}
         />
+        
+        <Tabs.Screen
+          name="lessons"
+          options={{
+            title: "Cours",
+            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
+
+          }}
+        />
 
         <Tabs.Screen
           name="player/[index]"
@@ -344,14 +353,7 @@ export default function RootLayout() {
             tabBarIcon: ({ color, focused }) => <Feather name="airplay" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
           }}
         />
-        <Tabs.Screen
-          name="leasons"
-          options={{
-            title: "Cours",
-            tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
 
-          }}
-        />
 
         <Tabs.Screen
           name="reciteurs"

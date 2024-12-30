@@ -17,18 +17,18 @@ const Item = ({ item, index }) => {
     } = useContext(GlobalContext)
 
     const [dialogVisible, setDialogVisible] = useState(false)
-    const handleSelcetLeason = async () => {
+    const handleSelcetlesson = async () => {
         router.push({ pathname: `player/l-${item.index}` })
         loadSelectLesson (item)
     }
 
     return <Pressable
         style={{ ...styles.touchableNative, pointerEvents: isLoading && isPlaying ? "none" : "auto" }}
-        onPress={handleSelcetLeason}
+        onPress={handleSelcetlesson}
     >
         <View style={styles.item} >
             <View style={styles.itemRight} >
-                <Text style={styles.leason} >
+                <Text style={styles.lesson} >
                     {`Cours: ${index + 1}`}
                 </Text>
                 <Text style={styles.suratText} >
@@ -60,13 +60,13 @@ const Item = ({ item, index }) => {
 
 };
 
-export default function Leasons() {
-    const { leasonList } = useContext(GlobalContext)
+export default function lessons() {
+    const { lessonList } = useContext(GlobalContext)
 
     return (
         <ScrollView style={styles.container} >
             <FlatList
-                data={leasonList}
+                data={lessonList}
                 renderItem={({ item, index }) => <Item index={index} item={item} />}
                 keyExtractor={(item, index) => index}
             />
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     itemRightVersetText: {
         fontSize: 12
     },
-    leason: {
+    lesson: {
         fontWeight: "bold",
         color: primary,
         fontSize: 15
