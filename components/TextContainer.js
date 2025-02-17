@@ -46,8 +46,8 @@ const style = StyleSheet.create({
     borderRadius: 10
   },
   text: {
-    fontSize: 27,
-    lineHeight: 60,
+    fontSize: 25,
+    lineHeight: 50,
     textAlign: 'center',
     color : primary,
     paddingVertical :( windowWidth - 100) / 2,

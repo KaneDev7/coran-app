@@ -1,11 +1,11 @@
 import React, { useContext, useState } from 'react'
 import { View, StyleSheet, Text, Pressable } from 'react-native'
 import { GlobalContext } from '../app/(tabs)/_layout'
-import { primary, secondary2 } from '../style/variables';
+import { primary, secondary, secondary2 } from '../style/variables';
 import { Link, router } from 'expo-router';
-import { Entypo } from '@expo/vector-icons';
+import { Entypo, MaterialIcons } from '@expo/vector-icons';
 import { windowWidth } from '../style';
-import { ConfirmDialog, Dialog } from 'react-native-simple-dialogs';
+import { ConfirmDialog } from 'react-native-simple-dialogs';
 
 
 export default function Rciter() {
@@ -27,24 +27,27 @@ export default function Rciter() {
             </Link>
 
             <Pressable onPress={() => setDialogVisible(true)}>
-                <Entypo name="save" size={24} color="black" />
+                {/* <Entypo name="save" size={24} color="black" /> */}
+                <MaterialIcons name="download-for-offline" size={30} color={primary} />
             </Pressable>
 
             <ConfirmDialog
                 title="Confirmer"
-                message="Voulez vous sauvgarder le cours ?"
+                message="Voulez vous telecchargez la section ?"
                 visible={dialogVisible}
                 onTouchOutside={() => setDialogVisible(false)}
                 positiveButton={{
-                    title: "Sauvegarder",
+                    title: "Telecharcher",
+                    titleStyle : {color : primary},
                     onPress: () =>{
                         onSaveLeason()
                         setDialogVisible(false)
-                        router.push({pathname : "/leasons"})
+                        router.push({pathname : "/lessons"})
                     }
                 }}
                 negativeButton={{
                     title: "Annuler",
+                    titleStyle : {color : primary},
                     onPress: () => setDialogVisible(false)
                 }}
             />
@@ -66,13 +69,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 20,
         borderWidth: 1,
-        borderColor: secondary2,
+        // borderColor: secondary2,
         padding: 5,
+        borderRadius : 5
     },
     reciterText: {
         fontSize: 15,
         color: primary,
-        textTransform: 'capitalize'
+        textTransform: 'capitalize',
     }
 
 });

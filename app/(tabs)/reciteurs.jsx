@@ -1,13 +1,12 @@
-import { View, FlatList, Text, StyleSheet, Image, Pressable } from 'react-native'
+import { View, FlatList, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { primary, secondary, secondary3 } from '@/style/variables';
 import { reciteurs } from "../../constants/reciteurs";
 import { useContext } from 'react';
 import { GlobalContext } from './_layout';
-import { AntDesign } from '@expo/vector-icons';
-import { ScrollView } from 'react-native-web';
-import { router } from 'expo-router';
+import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const Item = ({ item, index }) => {
+const ReciterItem = ({ item, index }) => {
   const {
     reciter,
     isPlaying,
@@ -16,100 +15,152 @@ const Item = ({ item, index }) => {
     initParams,
     onSelectReciter,
     isLoading,
-  } = useContext(GlobalContext)
+  } = useContext(GlobalContext);
 
-  const isActive = reciter === item.title
-  const iconNmae = isActive ? 'checkcircle' : 'checkcircleo'
+  const isActive = reciter === item.title;
+  const iconName = isActive ? 'checkcircle' : 'checkcircleo';
+  const isDisabled = (isLoading && isPlaying) || isActive;
 
-  const handleSelcetRicter = async () => {
-    onSelectReciter(item.title)
-    await initParams()
-    setCurrentSlide(selectSartVerset)
-  }
+  const handleSelectReciter = async () => {
+    onSelectReciter(item.title);
+    await initParams();
+    setCurrentSlide(selectSartVerset);
+  };
 
-  return <Pressable
-    style={{ ...styles.touchableNative, pointerEvents:( isLoading && isPlaying) || isActive ? "none" : "auto" }}
-    onPress={handleSelcetRicter}
-  >
-    <View style={styles.item} >
-      <View style={styles.itemRight} >
-        <View style={styles.itemRightVerset} >
-          <Image
-            style={styles.image}
-            source={item.url}
-          />
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.itemContainer,
+        pressed && !isDisabled && styles.pressed,
+        isDisabled && styles.disabled
+      ]}
+      onPress={handleSelectReciter}
+      disabled={isDisabled}
+    >
+      <LinearGradient
+        colors={['#ffffff', '#f8f9fa']}
+        style={styles.itemGradient}
+      >
+        <View style={styles.leftContent}>
+          <View style={styles.imageContainer}>
+            <Image
+              style={styles.image}
+              source={item.url}
+            />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.subtitle}>
+              <MaterialCommunityIcons name="microphone" size={14} color={secondary} />
+              {' '}Récitateur professionnel
+            </Text>
+          </View>
         </View>
-        <Text style={styles.suratText} > {item.name} </Text>
-      </View>
-      {
-      }
-      <AntDesign name={iconNmae} size={20} color={secondary} />
-    </View>
-  </Pressable>
 
+        <AntDesign 
+            name={iconName} 
+            size={20} 
+            color={isActive ? primary : secondary} 
+          />
+      </LinearGradient>
+    </Pressable>
+  );
 };
 
 export default function Reciteurs() {
   return (
-    <ScrollView style={styles.container} >
+    <View style={styles.container}>
       <FlatList
         data={reciteurs}
-        renderItem={({ item, index }) => <Item index={index} item={item} />}
-        keyExtractor={(item, index) => index}
+        renderItem={({ item, index }) => <ReciterItem index={index} item={item} />}
+        keyExtractor={(item, index) => index.toString()}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
       />
-    </ScrollView>
-  )
+    </View>
+  );
 }
-
 
 const styles = StyleSheet.create({
   container: {
-    display: 'flex',
-    gap: 10,
+    flex: 1,
     backgroundColor: secondary3,
   },
-  touchableNative: {
-    flex: 1
+  listContainer: {
+    padding: 16,
+    paddingBottom: 32,
   },
-  item: {
-    display: 'flex',
-    alignItems: 'center',
+  itemContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  itemGradient: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
-    paddingHorizontal: 30,
-    paddingVertical: 20,
-    marginBottom: 20,
-    color: primary,
+    padding: 16,
+    borderRadius: 12,
   },
-  suratText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: primary
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
-  itemRight: {
-    display: 'flex',
-    alignItems: 'center',
+  disabled: {
+    opacity: 0.6,
+  },
+  leftContent: {
     flexDirection: 'row',
-    gap: 30,
-  },
-  itemRightVerset: {
-    width: 35,
-    height: 35,
-    borderRadius: '50%',
-    display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: secondary,
+    flex: 1,
   },
-  itemRightVersetText: {
-    fontSize: 15
-  },
-  image: {
+  imageContainer: {
     width: 60,
     height: 60,
-    borderRadius: '50%'
-  }
-
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: primary,
+    overflow: 'hidden',
+    marginRight: 16,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: primary,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: secondary,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginLeft: 12,
+  },
+  activeStatus: {
+    backgroundColor: `${primary}15`,
+  },
+  statusText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: primary,
+    fontWeight: '500',
+  },
 });

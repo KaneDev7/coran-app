@@ -29,7 +29,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: secondary2,
         padding: 5,
-        marginVertical: 10
+        marginVertical: 10,
+        borderRadius : 5
     },
     text: {
         fontSize: 15,

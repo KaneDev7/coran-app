@@ -26,7 +26,6 @@ const DropdownComponent = () => {
     const [openSelectEndtVerset, setOpenSelectEndtVerset] = useState(false);
     const [dialogVisible, setDialogVisible] = useState(false)
 
-    console.log("isPaused", isPause)
     useEffect(() => {
         const versetsArray = []
         for (let index = 1; index <= lastVersetOfSelectedSurah; index++) {

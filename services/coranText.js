@@ -1,8 +1,8 @@
 // get texte coran by fetvhing api
-export async function getCoranText(n) {
+export async function fetchCoranText(url) {
     let text = ''
     try {
-        await fetch(`http://api.alquran.cloud/v1/ayah/${n}`)
+        await fetch(url)
         .then((result) => result.json())
         .then((data) => {
             text = data.data.text
