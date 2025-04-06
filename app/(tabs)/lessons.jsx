@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react'
 import {
   View,
   FlatList,
@@ -7,45 +7,62 @@ import {
   Pressable,
   Dimensions,
   Animated,
-  Easing,
-} from 'react-native';
-import { primary, secondary, secondary3 } from '@/style/variables';
-import { GlobalContext } from './_layout';
-import { router } from 'expo-router';
-import { sourates } from '../../constants/sorats.list';
-import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { ConfirmDialog } from 'react-native-simple-dialogs';
-import { LinearGradient } from 'expo-linear-gradient';
-import { EmptyList } from '../../components/EmptyList';
-import * as Progress from 'react-native-progress'; // Pour le loader circulaire
+  Easing
+} from 'react-native'
+import { primary, secondary, secondary3 } from '@/style/variables'
+import { GlobalContext } from './_layout'
+import { router } from 'expo-router'
+import { sourates } from '../../constants/sorats.list'
+import {
+  MaterialCommunityIcons,
+  Ionicons,
+  FontAwesome5,
+  MaterialIcons
+} from '@expo/vector-icons'
+import { ConfirmDialog } from 'react-native-simple-dialogs'
+import { LinearGradient } from 'expo-linear-gradient'
+import { EmptyList } from '../../components/EmptyList'
+import * as Progress from 'react-native-progress' // Pour le loader circulaire
+import { Image } from 'expo-image'
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get('window')
 
 const Item = ({ item, index }) => {
   const {
     isLoading,
     isPlaying,
     onDeleteLesson,
+    selectSartVerset,
+    selectEndVerset,
+    surahNumber,
+    isDeleting,
     downloadProgressId,
-    loadSelectLesson,
-  } = useContext(GlobalContext);
+    loadSelectLesson
+  } = useContext(GlobalContext)
 
-  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false)
 
   const handleSelectLesson = async () => {
-    router.push({ pathname: `player/l-${item.index}` });
-    loadSelectLesson(item);
-  };
+    router.push({ pathname: `player/l-${item.index}` })
+    loadSelectLesson(item)
+  }
 
-  const isPending = (isLoading && isPlaying )|| (downloadProgressId === item.id) 
+  const isLessonPlaying =
+    item.selectSartVerset === selectSartVerset &&
+    item.selectEndVerset === selectEndVerset &&
+    item.surahNumber === surahNumber
+
+  const isPending = (isLoading && isPlaying) || downloadProgressId === item.id 
+
+  // const isPending = (isLoading && isPlaying) || isLessonPlaying
+
   return (
     <Pressable
       style={({ pressed }) => [
-        {pointerEvents :   isPending ? "none" : "auto" },
+        { pointerEvents: isPending || isDeleting ? 'none' : 'auto' },
         styles.cardContainer,
         pressed && styles.pressed,
-        isPending && styles.disabled,
-    
+        (isPending || isDeleting) && styles.disabled
       ]}
       onPress={handleSelectLesson}
       disabled={isLoading && isPlaying}
@@ -85,13 +102,24 @@ const Item = ({ item, index }) => {
           hitSlop={10}
         >
           {/* Afficher le loader circulaire ou l'icône de suppression */}
-          {downloadProgressId === item.id ? (
+          {isDeleting ? (
             <View style={styles.loaderContainer}>
               <Progress.Circle
                 size={24}
-                indeterminate={true} // Mode indéterminé (animation infinie)
-                color={primary}
+                indeterminate
                 borderWidth={2}
+                color={primary}
+                borderColor='rgba(0, 0, 0, 0.1)'
+              />
+            </View>
+          ) : downloadProgressId ? (
+            <View style={styles.loaderContainer}>
+              <Progress.Circle
+                size={24}
+                indeterminate
+                borderWidth={2}
+                color={primary}
+                borderColor='rgba(0, 0, 0, 0.1)'
               />
               <MaterialCommunityIcons
                 name='download'
@@ -110,7 +138,7 @@ const Item = ({ item, index }) => {
         </Pressable>
 
         <ConfirmDialog
-          title='Confirmation de suppression'
+          title='Confirmer la suppression'
           message='Êtes-vous sûr de vouloir supprimer ce cours ?'
           visible={dialogVisible}
           onTouchOutside={() => setDialogVisible(false)}
@@ -118,26 +146,26 @@ const Item = ({ item, index }) => {
             title: 'Supprimer',
             titleStyle: { color: primary },
             onPress: () => {
-              onDeleteLesson(item.id);
-              setDialogVisible(false);
-            },
+              onDeleteLesson(item.id)
+              setDialogVisible(false)
+            }
           }}
           negativeButton={{
             title: 'Annuler',
             titleStyle: { color: primary },
-            onPress: () => setDialogVisible(false),
+            onPress: () => setDialogVisible(false)
           }}
         />
       </LinearGradient>
     </Pressable>
-  );
-};
+  )
+}
 
-export default function Lessons() {
-  const { lessonList } = useContext(GlobalContext);
+export default function Lessons () {
+  const { lessonList } = useContext(GlobalContext)
 
   if (!lessonList.length) {
-    return <EmptyList title={'Cours'} />;
+    return <EmptyList title={'Cours'} />
   }
 
   return (
@@ -150,17 +178,17 @@ export default function Lessons() {
         showsVerticalScrollIndicator={false}
       />
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: secondary3,
+    backgroundColor: secondary3
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 32
   },
   cardContainer: {
     marginBottom: 16,
@@ -169,7 +197,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 4
   },
   card: {
     flexDirection: 'row',
@@ -177,19 +205,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: 'white',
+    backgroundColor: 'white'
   },
   pressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.98 }]
   },
   disabled: {
-    opacity: 0.6,
+    opacity: 0.6
   },
   leftContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    flex: 1
   },
   courseNumber: {
     width: 40,
@@ -198,54 +226,54 @@ const styles = StyleSheet.create({
     backgroundColor: primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 16
   },
   courseNumberText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   courseInfo: {
-    flex: 1,
+    flex: 1
   },
   lessonTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: primary,
-    marginBottom: 4,
+    marginBottom: 4
   },
   suratInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 4
   },
   suratText: {
     fontSize: 14,
     color: secondary,
-    marginLeft: 6,
+    marginLeft: 6
   },
   versetRange: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   versetText: {
     fontSize: 14,
     color: secondary,
-    marginLeft: 6,
+    marginLeft: 6
   },
   deleteButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+    backgroundColor: 'rgba(220, 53, 69, 0.1)'
   },
   loaderContainer: {
     position: 'relative',
     width: 24,
     height: 24,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   downloadIcon: {
-    position: 'absolute', // Positionner l'icône au centre du loader
-  },
-});
+    position: 'absolute' // Positionner l'icône au centre du loader
+  }
+})

@@ -56,8 +56,8 @@ export default function Player() {
             </View>
             <StatusBar style="auto" />
             <ConfirmDialog
-                title="Error de connection"
-                message="Vérifier votre connection internet"
+                title="Erreur de resau"
+                message="Vérifier votre connexion internet"
                 visible={connectionError}
                 titleStyle={{ color: "red" }}
                 onTouchOutside={() => {
