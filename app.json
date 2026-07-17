@@ -15,7 +15,6 @@
           "audio"
         ],
         "NSDocumentsDirectoryUsageDescription": "Cette application a besoin d'accéder aux fichiers locaux pour lire les fichiers audio."
-      
       },
       "bundleIdentifier": "n"
     },
@@ -51,7 +50,9 @@
         {
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

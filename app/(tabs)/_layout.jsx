@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Feather from '@expo/vector-icons/Feather';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -14,7 +14,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 SplashScreen.preventAutoHideAsync();
 
 import { Platform, StyleSheet } from 'react-native';
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useRef, useState } from 'react';
 import { Audio } from 'expo-av';
 import { convertSelectVerset } from '@/helpers';
 import { sourates } from '@/constants/sorats.list';
@@ -60,6 +60,13 @@ export default function RootLayout() {
   const [isPause, setIsPause] = useState(false)
   const [downloadProgressId, setDownloadProgressId] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Référence toujours à jour du son courant (le state `sound` est asynchrone
+  // et ne peut pas être utilisé de façon fiable dans les closures).
+  const soundRef = useRef(null)
+  // Verrou d'idempotence : vrai tant qu'un audio est en cours de chargement.
+  // Empêche que deux audios soient lancés/chargés en même temps.
+  const isBusyRef = useRef(false)
 
   const disabled = isPlaying || isPause
 
@@ -160,8 +167,24 @@ export default function RootLayout() {
       setStartUrl(`https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${startPlayVersetUpdate}.mp3`)
     }
 
+    // Décharge complètement le son courant (stop + unload) et détache son
+    // callback pour qu'aucun statut périmé ne relance une lecture.
+    async function unloadCurrentSound() {
+      const current = soundRef.current
+      soundRef.current = null
+      if (current) {
+        try {
+          current.setOnPlaybackStatusUpdate(null)
+          await current.stopAsync()
+        } catch (e) { }
+        try {
+          await current.unloadAsync()
+        } catch (e) { }
+      }
+    }
+
     async function initParams() {
-      if (sound) await sound.stopAsync()
+      await unloadCurrentSound()
       setSound(null)
       setIsFirstStart(true)
       setIsplaying(false)
@@ -203,7 +226,7 @@ export default function RootLayout() {
     }
 
 
-    async function getCoranText(number: number) {
+    async function getCoranText(number) {
       const localTextUri = await getDownloadedText(`text_${number}`);
       const textUrl = localTextUri ? localTextUri : `http://api.alquran.cloud/v1/ayah/${number}`;
 
@@ -239,24 +262,39 @@ export default function RootLayout() {
 
 
 
-    async function playSound(uri: string) {
+    async function playSound(uri) {
+      // Idempotence : si un audio est déjà en cours de chargement, on ignore
+      // ce nouvel appel pour éviter deux lectures simultanées.
+      if (isBusyRef.current) {
+        return;
+      }
+      isBusyRef.current = true;
+      setIsLoading(true);
+
       try {
+        // On garantit qu'aucun audio précédent n'est encore chargé/en cours
+        // avant d'en lancer un nouveau.
+        await unloadCurrentSound();
+
         await getCoranText(currentVerset);
 
         const localUri = await getDownloadedAudio(`verset_${currentVerset}`);
         const soundUri = localUri ? localUri : uri;
 
-        const { sound, status } = await Audio.Sound.createAsync(
+        const { sound: newSound, status } = await Audio.Sound.createAsync(
           { uri: soundUri },
-          { shouldPlay: true },
+          { shouldPlay: true, volume, rate },
           onPlaybackStatusUpdate
         );
 
+        soundRef.current = newSound;
         setDuration(status.durationMillis);
-        setSound(sound);
+        setSound(newSound);
       } catch (error) {
         setIsLoading(false);
         console.error("❌ Erreur lors de la lecture du son :", error);
+      } finally {
+        isBusyRef.current = false;
       }
     }
 
@@ -272,12 +310,13 @@ export default function RootLayout() {
     }, [selectSartVerset, selectEndVerset, surahNumber, reciter]);
 
 
+    // Au démontage du composant, on décharge le son courant pour éviter
+    // les fuites mémoire et un audio qui continuerait de jouer.
     useEffect(() => {
-
-      sound ? async () => {
-        await sound.unloadAsync();
-      } : undefined;
-    }, [sound]);
+      return () => {
+        unloadCurrentSound();
+      };
+    }, []);
 
     useEffect(() => {
       if (sound) {

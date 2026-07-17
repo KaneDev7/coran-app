@@ -35,20 +35,28 @@ export default function Control() {
   }
 
   const handlePlayAndPause = async () => {
-    let toggleIcon = !isPlaying ? 'pause' : 'play'
     setIsFirstStart(false)
-    setIsplaying(v => !v)
-    setPlayPauseIcon(toggleIcon)
+
     if (!isFirstStart) {
       if (isPlaying) {
-        await sound.pauseAsync()
+        // Pause : on synchronise l'état sur l'action réellement effectuée.
+        if (sound) await sound.pauseAsync()
         setIsPause(true)
+        setIsplaying(false)
+        setPlayPauseIcon('play')
       } else {
-        await sound.playAsync()
+        // Reprise
+        if (sound) await sound.playAsync()
         setIsPause(false)
+        setIsplaying(true)
+        setPlayPauseIcon('pause')
       }
     } else {
+      // Premier lancement : playSound est idempotent (protégé par un verrou),
+      // un double-tap ne créera donc pas deux lectures.
       setIsPause(false)
+      setIsplaying(true)
+      setPlayPauseIcon('pause')
       playSound(startUrl)
     }
   }
