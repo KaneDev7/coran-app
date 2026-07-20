@@ -1,30 +1,31 @@
 import { View, FlatList, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { router } from 'expo-router';
 import { primary, secondary, secondary3 } from '@/style/variables';
 import { reciteurs } from "../../constants/reciteurs";
-import { useContext } from 'react';
-import { GlobalContext } from './_layout';
+import { useReciter } from '@/context/ReciterContext';
+import { usePlayer } from '@/context/PlayerContext';
+import { useLibrary } from '@/context/LibraryContext';
+import { useOffline } from '@/context/OfflineContext';
 import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const ReciterItem = ({ item, index }) => {
-  const {
-    reciter,
-    isPlaying,
-    setCurrentSlide,
-    selectSartVerset,
-    initParams,
-    onSelectReciter,
-    isLoading,
-  } = useContext(GlobalContext);
+  const { reciter, onSelectReciter } = useReciter();
+  const { isPlaying, isLoading, initParams } = usePlayer();
+  const { setCurrentSlide, selectSartVerset, currentIndex } = useLibrary();
+  const { isOfflineMode } = useOffline();
 
   const isActive = reciter === item.title;
   const iconName = isActive ? 'checkcircle' : 'checkcircleo';
-  const isDisabled = (isLoading && isPlaying) || isActive;
+  // En mode hors ligne, le changement de réciteur est verrouillé.
+  const isDisabled = (isLoading && isPlaying) || isActive || isOfflineMode;
 
   const handleSelectReciter = async () => {
     onSelectReciter(item.title);
     await initParams();
     setCurrentSlide(selectSartVerset);
+    // Choisir un réciteur amène directement à la page d'écoute.
+    router.push({ pathname: `/player/${currentIndex}` });
   };
 
   return (
@@ -68,8 +69,20 @@ const ReciterItem = ({ item, index }) => {
 };
 
 export default function Reciteurs() {
+  const { isOfflineMode } = useOffline();
+
   return (
     <View style={styles.container}>
+      {/* Indication claire : sélection verrouillée en mode hors ligne */}
+      {isOfflineMode && (
+        <View style={styles.offlineNotice}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={18} color="#fff" />
+          <Text style={styles.offlineNoticeText}>
+            Mode hors ligne actif : le changement de réciteur est verrouillé.
+            Quittez le mode hors ligne depuis le lecteur pour le modifier.
+          </Text>
+        </View>
+      )}
       <FlatList
         data={reciteurs}
         renderItem={({ item, index }) => <ReciterItem index={index} item={item} />}
@@ -85,6 +98,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: secondary3,
+  },
+  offlineNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e67e22',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  offlineNoticeText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 12,
   },
   listContainer: {
     padding: 16,

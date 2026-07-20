@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useContext } from 'react';
-import { GlobalContext } from '../app/(tabs)/_layout';
+import { usePlayer } from '@/context/PlayerContext';
 import { primary, secondary } from '@/style/variables';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 
 export const SourateItem = ({ item, index }) => {
-  const { isLoading, isPlaying } = useContext(GlobalContext);
+  const { isLoading, isPlaying } = usePlayer();
 
   return (
     <Pressable

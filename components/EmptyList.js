@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { primary, secondary } from '@/style/variables';
 
-export const EmptyList = ({ title }) => {
+export const EmptyList = ({ title, desc }) => {
     return (
         <View style={styles.container}>
-            <Feather name="book-open" size={64} color={secondary} style={{opacity: .5}} />
-            <Text style={styles.title}>Aucun {title} trouvé</Text>
-            <Text style={styles.description}>Vous pouvez commencer par ajouter un nouveau {title}.</Text>
+            <FontAwesome6 name="folder-open" size={64} color={secondary} style={{opacity: .5}} />
+            <Text style={styles.title}> {title} </Text>
+            <Text style={styles.description}>{desc}.</Text>
         </View>
     );
 };

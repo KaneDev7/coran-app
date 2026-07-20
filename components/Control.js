@@ -1,9 +1,11 @@
 import React, { useContext, useState } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, Pressable } from 'react-native'
 import { FontAwesome5 } from '@expo/vector-icons';
 import { windowWidth } from '../style'
 import { primary } from '../style/variables';
-import { GlobalContext } from '@/app/(tabs)/_layout'
+import { usePlayer } from '@/context/PlayerContext'
+import { useLibrary } from '@/context/LibraryContext'
+import { useOffline } from '@/context/OfflineContext'
 import { router } from 'expo-router';
 import { sourates } from '../constants/sorats.list';
 const iconSize = 30
@@ -18,15 +20,14 @@ export default function Control() {
     setIsplaying,
     setPlayPauseIcon,
     playPauseIcon,
-    setCurrentSlide,
-    selectSartVerset,
     isFirstStart,
     setIsPause,
-    currentIndex,
     isLoading,
     initParams,
     sound,
-  } = useContext(GlobalContext)
+  } = usePlayer()
+  const { setCurrentSlide, selectSartVerset, currentIndex } = useLibrary()
+  const { isOfflineMode } = useOffline()
 
 
   const handleStop = async () => {
@@ -62,11 +63,14 @@ export default function Control() {
   }
 
   const handleNext = async () => {
+    // En mode hors ligne, le changement de sourate est verrouillé.
+    if (isOfflineMode) return
     const index = sourates.length - 1 > currentIndex ? parseFloat(currentIndex) + 1 : 0
     router.push({ pathname: `/player/${index}` })
   }
 
   const handlePrev = async () => {
+    if (isOfflineMode) return
     const index = currentIndex > 0 ? parseFloat(currentIndex) - 1 : sourates.length - 1
     router.push({ pathname: `/player/${index}` })
   }
@@ -78,10 +82,27 @@ export default function Control() {
         opacity: isLoading && isPlaying ? "0.5" : '1',
         ...style.controlConatiner
       }} >
-      <FontAwesome5 onPress={handlePrev} name={'backward'} size={30} color={primary} />
-      <FontAwesome5 onPress={handlePlayAndPause} name={playPauseIcon} size={iconSize} color={primary} />
-      <FontAwesome5 onPress={handleStop} name={"stop"} size={iconSize} color={primary} />
-      <FontAwesome5 onPress={handleNext} name={'forward'} size={30} color={primary} />
+      <Pressable
+        style={[style.sideButton, isOfflineMode && style.sideButtonLocked]}
+        onPress={handlePrev}
+      >
+        <FontAwesome5 name={'backward'} size={20} color={primary} />
+      </Pressable>
+
+      <Pressable style={style.playButton} onPress={handlePlayAndPause}>
+        <FontAwesome5 name={playPauseIcon} size={26} color={'#fff'} style={playPauseIcon === 'play' ? { marginLeft: 4 } : null} />
+      </Pressable>
+
+      <Pressable style={style.sideButton} onPress={handleStop}>
+        <FontAwesome5 name={"stop"} size={18} color={primary} />
+      </Pressable>
+
+      <Pressable
+        style={[style.sideButton, isOfflineMode && style.sideButtonLocked]}
+        onPress={handleNext}
+      >
+        <FontAwesome5 name={'forward'} size={20} color={primary} />
+      </Pressable>
     </View>
   )
 }
@@ -89,11 +110,39 @@ export default function Control() {
 
 const style = StyleSheet.create({
   controlConatiner: {
-    width: windowWidth,
-    display: 'flex',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 50,
-  }
+    gap: 26,
+  },
+  playButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  sideButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  sideButtonLocked: {
+    opacity: 0.35,
+  },
 })

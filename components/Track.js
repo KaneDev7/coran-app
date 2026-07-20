@@ -1,22 +1,23 @@
 import React, { useContext } from 'react'
 import { StyleSheet, View, Text } from 'react-native'
 import { windowWidth } from '../style'
-import { GlobalContext } from '../app/(tabs)/_layout'
+import { usePlayer } from '@/context/PlayerContext'
 import { primary, secondary } from '../style/variables'
 import { formatTime } from "../helpers"
 
 export default function Track() {
 
-  const { duration, timeUpdate } = useContext(GlobalContext)
-  let width = (timeUpdate / duration) * windowWidth
+  const { duration, timeUpdate } = usePlayer()
+  // Progression en pourcentage : indépendante de la largeur réelle du conteneur.
+  const percent = duration > 0 ? Math.min((timeUpdate / duration) * 100, 100) : 0
 
   const progressStyle = {
-    width: width <= windowWidth ? width : 0,
-    height: 5,
+    width: `${percent}%`,
+    height: 6,
     backgroundColor: primary,
     borderRadius: 50,
     position: 'absolute',
-    left: '0',
+    left: 0,
   }
 
   return (
@@ -37,13 +38,13 @@ export default function Track() {
 
 const style = StyleSheet.create({
   track: {
-    width: windowWidth,
-    marginTop: 4
+    alignSelf: 'stretch',
+    marginTop: 14
   },
   progressBar: {
-    width: windowWidth,
-    height: 5,
-    backgroundColor: '#e3eef6',
+    alignSelf: 'stretch',
+    height: 6,
+    backgroundColor: '#e6ddd3',
     position: 'relative',
     borderRadius: 50,
 
@@ -52,12 +53,14 @@ const style = StyleSheet.create({
 
   },
   progressDot: {
+    width: 12,
+    height: 12,
     backgroundColor: secondary,
     borderRadius: 100,
     position: 'absolute',
     zIndex: 2,
-    top: -2,
-    right: -5
+    top: -3,
+    right: -6
   },
   trackTime: {
     display: 'flex',

@@ -1,13 +1,13 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { View, StyleSheet, Text } from 'react-native'
-import { GlobalContext } from '../app/(tabs)/_layout'
+import { useReciter } from '@/context/ReciterContext'
 import { primary, secondary, secondary2 } from '../style/variables';
 import { Link } from 'expo-router';
 import { Entypo } from '@expo/vector-icons';
 
 
 export default function Rciter() {
-    const { reciter} = useContext(GlobalContext)
+    const { reciter } = useReciter()
     return (
         <Link href="/reciteurs">
             <View

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react'
-import { GlobalContext } from '../app/(tabs)/_layout'
+import { usePlayer } from '@/context/PlayerContext'
 import { View } from 'react-native'
 import { InputRange } from './ui/InputRange'
 import { StyleSheet } from 'react-native'
@@ -7,7 +7,7 @@ import { FontAwesome5 } from '@expo/vector-icons'
 import { secondary } from '../style/variables'
 
 export default function VolumeInput() {
-    const { volume, setVolume } = useContext(GlobalContext)
+    const { volume, setVolume } = usePlayer()
 
     return (
         <View style={style.container}>
@@ -27,10 +27,9 @@ export default function VolumeInput() {
 
 const style = StyleSheet.create({
     container: {
-        flex: 1,
         flexDirection: 'row',
         alignItems: "center",
-        width: 210,
+        justifyContent: 'center',
         gap : 10
     },
 

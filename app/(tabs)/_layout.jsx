@@ -1,462 +1,95 @@
+import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
-import { Stack, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Feather from '@expo/vector-icons/Feather';
-import * as FileSystem from 'expo-file-system/legacy';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import { secondary } from '@/style/variables';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ReciterProvider } from '@/context/ReciterContext';
+import { LibraryProvider } from '@/context/LibraryContext';
+import { OfflineProvider } from '@/context/OfflineContext';
+import { PlayerProvider } from '@/context/PlayerContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-import { Platform, StyleSheet } from 'react-native';
-import { createContext, useEffect, useRef, useState } from 'react';
-import { Audio } from 'expo-av';
-import { convertSelectVerset } from '@/helpers';
-import { sourates } from '@/constants/sorats.list';
-import { secondary } from '@/style/variables';
-import { MaterialIcons } from '@expo/vector-icons';
-import { clearAllAudioCache, downloadAudio, downloadText, getDownloadedAudio, getDownloadedText, removeDownloadedAudio, removeDownloadedText } from '@/services/downloads';
-import { storeLessons, storeReciter } from '@/services/storage';
-
-
-export const GlobalContext = createContext()
-
-export default function RootLayout() {
-
-  const colorScheme = useColorScheme();
+export default function TabsLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  const [lastVersetOfSelectedSurah, setLastVersetOfSelectedSurah] = useState(7);
-  const [firstVersetOfSelectedSurah, setFirstVersetOfSelectedSurah] = useState(1);
-  const [startUrl, setStartUrl] = useState('')
-  const [sound, setSound] = useState();
-  const [surahNumber, setSurahNumber] = useState(0)
-  const [selectSartVerset, setSelectSartVerset] = useState(1)
-  const [selectEndVerset, setSelectEndVerset] = useState(7)
-  const [startPlayVerset, setStartPlayVerset] = useState(1)
-  const [endPlayVerset, setEndPlayVerset] = useState(7)
-  const [coranText, setCorantText] = useState('')
-  const [isPlaying, setIsplaying] = useState(false)
-  const [playPauseIcon, setPlayPauseIcon] = useState('play')
-  const [isFirstStart, setIsFirstStart] = useState(true)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentSlide, setCurrentSlide] = useState(selectSartVerset)
-  const [surahTextValue, setSurahTextValue] = useState(sourates[0].nom)
-  const [duration, setDuration] = useState(0)
-  const [timeUpdate, setTimeUpdate] = useState(0)
-  const [volume, setVolume] = useState(0.8)
-  const [rate, setRate] = useState(1)
-  const [lessonList, setlessonList] = useState([])
-  const [connectionError, setConnectionError] = useState(false)
-  const [reciter, setReciter] = useState("aymanswoaid")
-  const [isPause, setIsPause] = useState(false)
-  const [downloadProgressId, setDownloadProgressId] = useState("")
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  // Référence toujours à jour du son courant (le state `sound` est asynchrone
-  // et ne peut pas être utilisé de façon fiable dans les closures).
-  const soundRef = useRef(null)
-  // Verrou d'idempotence : vrai tant qu'un audio est en cours de chargement.
-  // Empêche que deux audios soient lancés/chargés en même temps.
-  const isBusyRef = useRef(false)
-
-  const disabled = isPlaying || isPause
-
-  let currentVerset = startPlayVerset
-  const getLessons = async () => {
-    try {
-      const value = await AsyncStorage.getItem('lesson') || []
-      if (value !== null) {
-        setlessonList(JSON.parse(value))
-      }
-    } catch (e) {
-      // error reading value
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
     }
-  };
+  }, [loaded]);
 
-  const getReciter = async () => {
-    try {
-      const value = await AsyncStorage.getItem('reciter') || "aymanswoaid"
-      if (value !== null) {
-        // value previously stored
-        setReciter(value)
-      }
-    } catch (e) {
-      setReciter("aymanswoaid")
-      // error reading value
-    }
-  };
-
-
-  const onDeleteLesson = async (id) => {
-    setIsDeleting(true)
-    const lessonsFiltred = lessonList.filter(item => item.id !== id)
-    setlessonList(lessonsFiltred)
-    await storeLessons(lessonsFiltred)
-    const lesson = lessonList.find(item => item.id === id)
-    if (!lesson) return
-
-    const { selectSartVerset, selectEndVerset, surahNumber } = lesson
-
-    for (let i = selectSartVerset; i <= selectEndVerset; i++) {
-      const versetNumberPositon = convertSelectVerset({ surahNumber, selectedValue: i });
-      const nameAudio = `verset_${versetNumberPositon}`;
-      const nameText = `text_${versetNumberPositon}`;
-      await removeDownloadedAudio(nameAudio)
-      await removeDownloadedText(nameText)
-    }
-    setIsDeleting(false)
+  if (!loaded) {
+    return null;
   }
 
-
-    const donloaadSaveLessons = async () => {
-      for (let i = selectSartVerset; i <= selectEndVerset; i++) {
-        const versetNumberPositon = convertSelectVerset({ surahNumber, selectedValue: i });
-        const nameAudio = `verset_${versetNumberPositon}`;
-        const nameText = `text_${versetNumberPositon}`;
-        const urlAudio = `https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${versetNumberPositon}.mp3`;
-        const urlText = `http://api.alquran.cloud/v1/ayah/${versetNumberPositon}`;
-
-        await downloadAudio(nameAudio, urlAudio);
-        await downloadText(nameText, urlText);
-      }
-      setDownloadProgressId("")
-    };
-
-
-    const onSaveLeason = async () => {
-      const lessonId = Date.now()
-      setDownloadProgressId(lessonId)
-
-      const updateLesson = [
-        ...lessonList,
-        {
-          id: lessonId,
-          selectSartVerset,
-          selectEndVerset,
-          surahNumber,
-          index: currentIndex,
-        }
-      ]
-
-      await storeLessons(updateLesson)
-      donloaadSaveLessons()
-      setlessonList(updateLesson)
-    }
+  // Ordre d'imbrication imposé par les dépendances entre domaines :
+  // le moteur audio (Player) consomme Reciter, Library et Offline.
+  return (
+    <ReciterProvider>
+      <LibraryProvider>
+        <OfflineProvider>
+          <PlayerProvider>
+            <Tabs screenOptions={{ tabBarActiveTintColor: secondary }}>
+              <Tabs.Screen
+                name="index"
+                options={{
+                  title: 'Sourates',
+                  tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
+                }}
+              />
 
 
-    const onSelectReciter = async (value) => {
-      await storeReciter(value)
-      setReciter(value)
-    }
+              <Tabs.Screen
+                name="lessons"
+                options={{
+                  headerShadowVisible: false,
+                  title: "hors ligne",
+                  tabBarIcon: ({ color, focused }) => <Feather name="wifi-off" tyle={{ opacity: focused ? 1 : .4 }} size={20} color={secondary} />,
+                }}
+              />
+              <Tabs.Screen
+                name="player/[index]"
+                options={{
+                  headerShadowVisible: false,
+                  title: 'Ecouter',
+                  headerShown: false,
+                  tabBarIcon: ({ color, focused }) => <AntDesign name="play-circle" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />
+                }}
+              />
+              <Tabs.Screen
+                name="reciteurs"
+                options={{
+                  headerShadowVisible: false,
+                  title: 'Réciteurs',
+                  tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
+                }}
+              />
 
-    async function loadSelectAudio(surahNumber, selectVerst) {
-      const startPlayVersetUpdate = convertSelectVerset({ surahNumber, selectedValue: selectVerst.start })
-      const endPlayVersetUpdate = convertSelectVerset({ surahNumber, selectedValue: selectVerst.end })
+              <Tabs.Screen
+                name="settings"
+                options={{
+                  headerShadowVisible: false,
+                  title: 'Paramètres',
+                  tabBarIcon: ({ color, focused }) => <Feather name="settings" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
+                }}
+              />
 
-      setStartPlayVerset(startPlayVersetUpdate)
-      setEndPlayVerset(endPlayVersetUpdate)
-      setStartUrl(`https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${startPlayVersetUpdate}.mp3`)
-    }
-
-    // Décharge complètement le son courant (stop + unload) et détache son
-    // callback pour qu'aucun statut périmé ne relance une lecture.
-    async function unloadCurrentSound() {
-      const current = soundRef.current
-      soundRef.current = null
-      if (current) {
-        try {
-          current.setOnPlaybackStatusUpdate(null)
-          await current.stopAsync()
-        } catch (e) { }
-        try {
-          await current.unloadAsync()
-        } catch (e) { }
-      }
-    }
-
-    async function initParams() {
-      await unloadCurrentSound()
-      setSound(null)
-      setIsFirstStart(true)
-      setIsplaying(false)
-      setIsLoading(false)
-      setIsPause(false)
-      setPlayPauseIcon('play')
-      setCorantText('')
-    }
-
-    async function loadSelectLesson(item) {
-      const { selectSartVerset, selectEndVerset, index, surahNumber } = item
-      await initParams()
-      loadSelectAudio(
-        surahNumber,
-        {
-          start: selectSartVerset,
-          end: selectEndVerset
-        })
-      setSelectSartVerset(selectSartVerset)
-      setSelectEndVerset(selectEndVerset)
-      setCurrentSlide(selectSartVerset)
-      setSurahTextValue(sourates[index].nom)
-      setSurahNumber(sourates[index].numero)
-    }
-
-
-    const loadNewSound = async (index) => {
-      await initParams()
-      setCurrentSlide(selectSartVerset)
-      setSurahTextValue(sourates[index].nom)
-      setSurahNumber(sourates[index].numero)
-    }
-
-    const initAudio = async (index) => {
-      await loadNewSound(index)
-      setCurrentIndex(index)
-      setCurrentSlide(1)
-      setLastVersetOfSelectedSurah(sourates[index]?.versets)
-    }
-
-
-    async function getCoranText(number) {
-      const localTextUri = await getDownloadedText(`text_${number}`);
-      const textUrl = localTextUri ? localTextUri : `http://api.alquran.cloud/v1/ayah/${number}`;
-
-      try {
-        const response = await fetch(textUrl);
-        const data = await response.json();
-
-        setCorantText(data.data.text);
-      } catch (error) {
-        if (error.message === "Failed to fetch") {
-          await downloadText(`text_${number}`, textUrl);
-          setConnectionError(true);
-        }
-      }
-    }
-
-    async function onPlaybackStatusUpdate(status) {
-      setTimeUpdate(status.positionMillis)
-      setIsLoading(!status.isPlaying)
-
-      if (status.didJustFinish) {
-        setCurrentSlide(v => v >= selectEndVerset ? selectSartVerset : v + 1)
-
-        //update currentVerset
-        if (currentVerset >= endPlayVerset) {
-          currentVerset = startPlayVerset - 1
-        }
-        currentVerset++
-        const newUrl = `https://cdn.islamic.network/quran/audio/64/ar.${reciter}/${currentVerset}.mp3`
-        playSound(newUrl)
-      }
-    };
-
-
-
-    async function playSound(uri) {
-      // Idempotence : si un audio est déjà en cours de chargement, on ignore
-      // ce nouvel appel pour éviter deux lectures simultanées.
-      if (isBusyRef.current) {
-        return;
-      }
-      isBusyRef.current = true;
-      setIsLoading(true);
-
-      try {
-        // On garantit qu'aucun audio précédent n'est encore chargé/en cours
-        // avant d'en lancer un nouveau.
-        await unloadCurrentSound();
-
-        await getCoranText(currentVerset);
-
-        const localUri = await getDownloadedAudio(`verset_${currentVerset}`);
-        const soundUri = localUri ? localUri : uri;
-
-        const { sound: newSound, status } = await Audio.Sound.createAsync(
-          { uri: soundUri },
-          { shouldPlay: true, volume, rate },
-          onPlaybackStatusUpdate
-        );
-
-        soundRef.current = newSound;
-        setDuration(status.durationMillis);
-        setSound(newSound);
-      } catch (error) {
-        setIsLoading(false);
-        console.error("❌ Erreur lors de la lecture du son :", error);
-      } finally {
-        isBusyRef.current = false;
-      }
-    }
-
-
-    useEffect(() => {
-      loadSelectAudio(
-        surahNumber,
-        {
-          start: selectSartVerset,
-          end: selectEndVerset
-        })
-
-    }, [selectSartVerset, selectEndVerset, surahNumber, reciter]);
-
-
-    // Au démontage du composant, on décharge le son courant pour éviter
-    // les fuites mémoire et un audio qui continuerait de jouer.
-    useEffect(() => {
-      return () => {
-        unloadCurrentSound();
-      };
-    }, []);
-
-    useEffect(() => {
-      if (sound) {
-        sound.setVolumeAsync(volume)
-      }
-    }, [sound, volume]);
-
-    useEffect(() => {
-      if (sound) {
-        sound.setRateAsync(rate, true)
-      }
-    }, [sound, rate]);
-
-    useEffect(() => {
-      if (loaded) {
-        SplashScreen.hideAsync();
-      }
-    }, [loaded]);
-
-
-    useEffect(() => {
-      getLessons()
-      getReciter()
-      // clearAllAudioCache()
-    }, [])
-
-    if (!loaded) {
-      return null;
-    }
-
-    return (
-      <GlobalContext.Provider value={{
-        setFirstVersetOfSelectedSurah,
-        setLastVersetOfSelectedSurah,
-        setSurahNumber,
-        setCurrentIndex,
-        setCurrentSlide,
-        duration,
-        timeUpdate,
-        setIsplaying,
-        isDeleting, 
-        setIsDeleting,
-        setPlayPauseIcon,
-        setIsFirstStart,
-        setSurahTextValue,
-        setCorantText,
-        setSelectSartVerset,
-        setSelectEndVerset,
-        playSound,
-        setIsPause,
-        isPause,
-        setSound,
-        volume,
-        setVolume,
-        initParams,
-        loadNewSound,
-        loadSelectLesson,
-        initAudio,
-        disabled,
-        isLoading,
-        setIsLoading,
-        downloadProgressId,
-        setRate,
-        rate,
-        onSelectReciter,
-        surahNumber,
-        onSaveLeason,
-        onDeleteLesson,
-        lessonList,
-        connectionError,
-        setConnectionError,
-        setReciter,
-        sound,
-        reciter,
-        coranText,
-        startUrl,
-        isPlaying,
-        playPauseIcon,
-        isFirstStart,
-        currentIndex,
-        currentSlide,
-        surahTextValue,
-        selectSartVerset,
-        selectEndVerset,
-        firstVersetOfSelectedSurah,
-        lastVersetOfSelectedSurah
-      }}>
-
-        <Tabs screenOptions={{ tabBarActiveTintColor: secondary }}>
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Sourates',
-
-              tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
-            }}
-          />
-
-          <Tabs.Screen
-            name="lessons"
-            options={{
-              title: "Cours",
-              tabBarIcon: ({ color, focused }) => <Entypo name="book" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
-            }}
-          />
-
-          <Tabs.Screen
-            name="player/[index]"
-            options={{
-              title: 'Ecouter',
-              headerShown: false,
-              tabBarIcon: ({ color, focused }) => <MaterialIcons name="headset" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />
-            }}
-          />
-
-
-          <Tabs.Screen
-            name="reciteurs"
-            options={{
-              title: 'Réciteurs',
-              tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
-            }}
-          />
-
-        </Tabs>
-        <StatusBar style="auto" />
-      </GlobalContext.Provider>
-    );
-  }
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#fff',
-      alignItems: 'center',
-    },
-    surahContent: {
-      marginVertical: 20
-    },
-    surahText: {
-      fontSize: 25,
-    }
-  });
+            </Tabs>
+            <StatusBar style="auto" />
+          </PlayerProvider>
+        </OfflineProvider>
+      </LibraryProvider>
+    </ReciterProvider>
+  );
+}

@@ -1,7 +1,9 @@
 import { Dropdown } from 'react-native-element-dropdown';
 import React, { useContext, useEffect, useState } from 'react'
 import { View, StyleSheet, Text } from 'react-native'
-import { GlobalContext } from '../app/(tabs)/_layout'
+import { useLibrary } from '@/context/LibraryContext'
+import { usePlayer } from '@/context/PlayerContext'
+import { useOffline } from '@/context/OfflineContext'
 import DropDownPicker from 'react-native-dropdown-picker';
 import { windowWidth } from '../style';
 import { ConfirmDialog } from 'react-native-simple-dialogs';
@@ -17,9 +19,12 @@ const DropdownComponent = () => {
         selectSartVerset,
         currentSlide,
         setCurrentSlide,
-        isPause,
-        isPlaying,
-    } = useContext(GlobalContext)
+    } = useLibrary()
+    const { isPause, isPlaying } = usePlayer()
+    const { isOfflineMode } = useOffline()
+
+    // En mode hors ligne, la sélection de versets est verrouillée.
+    const isLocked = isPlaying || isPause || isOfflineMode
 
     const [versets, setVersets] = useState([])
     const [openSelectStartVerset, setOpenSelectStartVerset] = useState(false);
@@ -38,16 +43,18 @@ const DropdownComponent = () => {
 
     return (
         <View style={styles.selectAyahContent}>
+            <View style={styles.pickerBlock}>
+            <Text style={styles.pickerLabel}>Du verset</Text>
             <DropDownPicker
                 open={openSelectStartVerset}
                 setOpen={setOpenSelectStartVerset}
                 items={versets}
-                disabled={isPlaying || isPause}
+                disabled={isLocked}
                 placeholder={currentSlide}
                 // value={currentSlide}
                 disabledStyle={true}
                 maxHeight={300}
-                containerStyle={{ width: windowWidth / 4, opacity: isPlaying || isPause ? .6 : 1 }}
+                containerStyle={{ width: windowWidth / 4, opacity: isLocked ? .3 : 1 }}
                 textStyle={{ fontSize: 17 }}
                 onSelectItem={item => {
                     if (item.value > selectEndVerset) {
@@ -58,16 +65,19 @@ const DropdownComponent = () => {
                     setCurrentSlide(item.value)
                 }}
             />
+            </View>
+            <View style={styles.pickerBlock}>
+            <Text style={styles.pickerLabel}>Au verset</Text>
             <DropDownPicker
                 open={openSelectEndtVerset}
                 setOpen={setOpenSelectEndtVerset}
                 items={versets}
-                disabled={isPlaying || isPause}
+                disabled={isLocked}
                 placeholder={selectEndVerset}
                 textStyle={{ fontSize: 17 }}
                 maxHeight={300}
                 // value={selectEndVerset}
-                containerStyle={{ width: windowWidth / 4, opacity: isPlaying || isPause ? .6 : 1 }}
+                containerStyle={{ width: windowWidth / 4, opacity: isLocked ? .3 : 1 }}
                 onSelectItem={item => {
                     if (item.value < selectSartVerset) {
                         setSelectEndVerset(selectSartVerset)
@@ -76,6 +86,7 @@ const DropdownComponent = () => {
                     setSelectEndVerset(item.value)
                 }}
             />
+            </View>
 
             <ConfirmDialog
                 title="Impossible"
@@ -98,11 +109,21 @@ export default DropdownComponent;
 
 const styles = StyleSheet.create({
     selectAyahContent: {
-        flex: 1,
-        display: 'flex',
         flexDirection: "row",
+        justifyContent: 'center',
         gap: 30,
-
+        marginTop: 12,
+        zIndex: 10,
+    },
+    pickerBlock: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    pickerLabel: {
+        fontSize: 11,
+        color: '#8C6A4C',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     dropdown: {
         margin: 0,

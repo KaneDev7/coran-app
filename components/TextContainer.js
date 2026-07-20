@@ -1,7 +1,7 @@
 import React, { useCallback, useContext } from 'react'
 import { Text, StyleSheet, ScrollView } from 'react-native'
 import { windowWidth } from '../style'
-import { GlobalContext } from '../app/(tabs)/_layout'
+import { usePlayer } from '@/context/PlayerContext'
 import { primary, secondary2, secondary3 } from '../style/variables'
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,7 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 SplashScreen.preventAutoHideAsync();
 
 export default function TextContainer() {
-  const { coranText } = useContext(GlobalContext)
+  const { coranText } = usePlayer()
 
   const [fontsLoaded, fontError] = useFonts({
     'Amiri-Quran': require('../assets/fonts/Amiri-Quran.ttf'),
@@ -26,8 +26,18 @@ export default function TextContainer() {
   }
 
   return (
-    <ScrollView style={style.textContainer} onLayout={onLayoutRootView}>
-      <Text style={{fontFamily: 'Amiri-Quran' ,...style.text} }> {coranText} </Text>
+    <ScrollView
+      style={style.textContainer}
+      contentContainerStyle={style.textContent}
+      onLayout={onLayoutRootView}
+    >
+      {coranText ? (
+        <Text style={{ fontFamily: 'Amiri-Quran', ...style.text }}> {coranText} </Text>
+      ) : (
+        <Text style={style.placeholder}>
+          Appuyez sur ▶ pour lancer l'écoute
+        </Text>
+      )}
     </ScrollView>
   )
 }
@@ -35,23 +45,25 @@ export default function TextContainer() {
 
 const style = StyleSheet.create({
   textContainer: {
-    width: windowWidth,
-    height: windowWidth - 150,
-    backgroundColor: secondary3,
-    borderWidth: 3,
-    borderColor: secondary2,
-    textAlign: 'center',
-    marginTop: 20,
-    paddingHorizontal: 10, 
-    borderRadius: 10
+    alignSelf: 'stretch',
+    height: windowWidth - 170,
+  },
+  textContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   text: {
     fontSize: 25,
     lineHeight: 50,
     textAlign: 'center',
     color : primary,
-    paddingVertical :( windowWidth - 100) / 2,
-
   },
- 
+  placeholder: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: secondary2,
+  },
+
 })
