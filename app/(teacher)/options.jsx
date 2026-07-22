@@ -100,12 +100,17 @@ export default function TeacherOptionsStep() {
             contentContainerStyle={{ gap: 12, paddingVertical: 4 }}
             renderItem={({ item }) => {
               const active = item.title === reciter
+              const isDefault = item.title === 'aymanswoaid'
               return (
-                <Pressable style={styles.reciterItem} onPress={() => setReciter(item.title)}>
-                  <View style={[styles.avatarRing, active && styles.avatarRingActive]}>
-                    <Image source={item.url} style={styles.avatar} />
+                <Pressable
+                  style={[styles.reciterItem, !isDefault && styles.reciterItemDisabled]}
+                  onPress={() => isDefault && setReciter(item.title)}
+                  disabled={!isDefault}
+                >
+                  <View style={[styles.avatarRing, active && styles.avatarRingActive, !isDefault && styles.avatarRingGray]}>
+                    <Image source={item.url} style={[styles.avatar, !isDefault && styles.avatarGray]} />
                   </View>
-                  <Text style={[styles.reciterName, active && styles.reciterNameActive]} numberOfLines={1}>
+                  <Text style={[styles.reciterName, active && styles.reciterNameActive, !isDefault && styles.reciterNameGray]} numberOfLines={1}>
                     {item.name}
                   </Text>
                 </Pressable>
@@ -180,6 +185,7 @@ const styles = StyleSheet.create({
   },
   stepperValue: { fontSize: 30, fontWeight: 'bold', color: primary, minWidth: 44, textAlign: 'center' },
   reciterItem: { alignItems: 'center', width: 68, gap: 4 },
+  reciterItemDisabled: { opacity: 0.4 },
   avatarRing: {
     width: 60,
     height: 60,
@@ -189,9 +195,12 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   avatarRingActive: { borderColor: primary },
+  avatarRingGray: { borderColor: secondary2 },
   avatar: { width: '100%', height: '100%', borderRadius: 28 },
+  avatarGray: { opacity: 0.5 },
   reciterName: { fontSize: 11, color: secondary, textAlign: 'center' },
   reciterNameActive: { color: primary, fontWeight: 'bold' },
+  reciterNameGray: { color: secondary2 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
   rateValue: { textAlign: 'center', color: primary, fontWeight: '600', marginTop: 4 },
   saveBtn: {

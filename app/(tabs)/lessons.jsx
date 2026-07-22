@@ -235,9 +235,9 @@ const Item = ({ item, index }) => {
                 />
               </View>
             ) : (
-              <MaterialCommunityIcons
-                name="delete-outline"
-                size={24}
+              <Feather
+                name="trash-2"
+                size={18}
                 color="#dc3545"
               />
             )}
@@ -354,6 +354,16 @@ export default function Lessons() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={styles.container}>
+        {/* Bouton retour à l'accueil */}
+        <Pressable
+          style={styles.homeBtn}
+          onPress={() => router.push('/')}
+          hitSlop={10}
+        >
+          <MaterialCommunityIcons name="home-variant-outline" size={18} color={primary} />
+          <Text style={styles.homeBtnText}>Accueil</Text>
+        </Pressable>
+
         {/* Recherche par sourate */}
         <View style={styles.searchBar}>
           <Feather name="search" size={18} color={secondary} />
@@ -434,6 +444,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: secondary3,
   },
+  homeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  homeBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: primary,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -441,7 +467,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 8,
     paddingHorizontal: 12,
     height: 44,
     elevation: 2,

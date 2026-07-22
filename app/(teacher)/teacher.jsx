@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons'
+import { primary } from '@/style/variables'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { sourates } from '@/constants/sorats.list'
 import { SurahCard } from '@/components/SurahCard'
@@ -61,11 +62,20 @@ export default function TeacherSurahStep() {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.headerWrap}>
-          <StepHeader
-            title="Mode Professeur"
-            subtitle="Étape 1 — Choisissez une sourate"
-            step={1}
-          />
+          <View style={styles.homeRow}>
+            <StepHeader
+              title="Mode Professeur"
+              subtitle="Étape 1 — Choisissez une sourate"
+              step={1}
+            />
+            <Pressable
+              style={styles.homeIconBtn}
+              onPress={() => router.push('/')}
+              hitSlop={10}
+            >
+              <MaterialCommunityIcons name="home-variant-outline" size={20} color={primary} />
+            </Pressable>
+          </View>
 
           <View style={styles.searchBar}>
             <Feather name="search" size={18} color={secondary} />
@@ -133,6 +143,8 @@ export default function TeacherSurahStep() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: secondary3 },
   headerWrap: { paddingHorizontal: 16, paddingTop: 8 },
+  homeRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 },
+  homeIconBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', marginTop: 20 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',

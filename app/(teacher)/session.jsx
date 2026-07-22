@@ -10,6 +10,7 @@ import { VerseDisplay } from '@/components/teacher/VerseDisplay'
 import { PhaseBanner } from '@/components/teacher/PhaseBanner'
 import { MicMeter } from '@/components/teacher/MicMeter'
 import { SessionControls } from '@/components/teacher/SessionControls'
+import { InputRange } from '@/components/ui/InputRange'
 import { useTeacher } from '@/context/TeacherContext'
 
 export default function TeacherSession() {
@@ -18,6 +19,8 @@ export default function TeacherSession() {
     startVerse,
     endVerse,
     repetitions,
+    rate,
+    setRate,
     phase,
     currentVerse,
     currentRepetition,
@@ -130,6 +133,14 @@ export default function TeacherSession() {
         />
       </View>
 
+      {/* Contrôle de vitesse */}
+      <View style={styles.rateControl}>
+        <MaterialCommunityIcons name="speedometer-slow" size={18} color={secondary} />
+        <InputRange value={rate} setValue={setRate} min={0.75} max={1.25} />
+        <MaterialCommunityIcons name="speedometer" size={18} color={secondary} />
+        <Text style={styles.rateValue}>{rate.toFixed(2)}×</Text>
+      </View>
+
       {/* Contrôles manuels */}
       <View style={styles.controls}>
         <SessionControls
@@ -224,5 +235,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   micZone: { alignItems: 'center', marginVertical: 16 },
+  rateControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 12,
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+  },
+  rateValue: {
+    minWidth: 40,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: primary,
+  },
   controls: { marginBottom: 8 },
 })
