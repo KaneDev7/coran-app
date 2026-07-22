@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av'
 import { convertSelectVerset } from '@/helpers'
@@ -71,12 +70,10 @@ export function TeacherProvider({ children }) {
   const repRef = useRef(1)
   const loopRef = useRef(0)
 
-  // Charge le réciteur persisté comme valeur par défaut.
-  useEffect(() => {
-    AsyncStorage.getItem('reciter').then(value => {
-      if (value) setReciter(value)
-    })
-  }, [])
+  // Le mode Professeur n'autorise que Ayman Swoaid comme réciteur (les
+  // autres sont grisés dans l'UI) : pas de chargement du réciteur
+  // persisté par le mode Révision libre, sous peine de désaligner la
+  // présélection avec ce qui est affiché comme actif.
 
   // ---- Sélection depuis l'assistant ----
   const selectSurah = index => {
