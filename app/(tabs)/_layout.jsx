@@ -42,7 +42,7 @@ export default function TabsLayout() {
           <PlayerProvider>
             <Tabs screenOptions={{ tabBarActiveTintColor: secondary }}>
               <Tabs.Screen
-                name="index"
+                name="sourates"
                 options={{
                   title: 'Sourates',
                   tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,

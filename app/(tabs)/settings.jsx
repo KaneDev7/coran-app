@@ -14,6 +14,7 @@ import {
   Feather,
 } from '@expo/vector-icons'
 import { ConfirmDialog } from 'react-native-simple-dialogs'
+import { router } from 'expo-router'
 import { primary, secondary, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
 
@@ -75,6 +76,13 @@ export default function Settings() {
           </View>
         </View>
       </View>
+
+      {/* ---- Accueil / changer de mode ---- */}
+      <Pressable style={styles.homeCard} onPress={() => router.push('/')}>
+        <MaterialCommunityIcons name="home-variant-outline" size={22} color={primary} />
+        <Text style={styles.homeCardText}>Accueil · changer de mode</Text>
+        <MaterialIcons name="chevron-right" size={22} color={secondary} />
+      </Pressable>
 
       {/* ---- Premium (préparation) ---- */}
       <View style={styles.premiumCard}>
@@ -149,6 +157,21 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
+  homeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  homeCardText: { flex: 1, fontSize: 15, fontWeight: '600', color: primary },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
