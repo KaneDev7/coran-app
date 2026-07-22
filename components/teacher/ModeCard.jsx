@@ -3,17 +3,22 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons'
 
 // Grande carte de choix de mode sur la page d'accueil.
-export function ModeCard({ icon, title, subtitle, colors, onPress }) {
+export function ModeCard({ icon, title, subtitle, colors, onPress, badge, disabled }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
-      onPress={onPress}
+      style={({ pressed }) => [
+        styles.wrapper,
+        pressed && !disabled && styles.pressed,
+        disabled && styles.wrapperDisabled,
+      ]}
+      onPress={!disabled ? onPress : undefined}
+      disabled={disabled}
     >
       <LinearGradient
-        colors={colors}
+        colors={disabled ? ['#ccc', '#999'] : colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.card}
+        style={[styles.card, disabled && styles.cardDisabled]}
       >
         <View style={styles.iconCircle}>
           <MaterialCommunityIcons name={icon} size={34} color="#fff" />
@@ -22,7 +27,15 @@ export function ModeCard({ icon, title, subtitle, colors, onPress }) {
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
-        <Feather name="chevron-right" size={24} color="rgba(255,255,255,0.9)" />
+        <View style={styles.chevronContainer}>
+          {badge ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{badge}</Text>
+            </View>
+          ) : (
+            <Feather name="chevron-right" size={24} color="rgba(255,255,255,0.9)" />
+          )}
+        </View>
       </LinearGradient>
     </Pressable>
   )
@@ -37,6 +50,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
   },
+  wrapperDisabled: { opacity: 0.6 },
   pressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   card: {
     flexDirection: 'row',
@@ -45,6 +59,7 @@ const styles = StyleSheet.create({
     padding: 22,
     gap: 16,
   },
+  cardDisabled: { opacity: 0.8 },
   iconCircle: {
     width: 64,
     height: 64,
@@ -56,4 +71,12 @@ const styles = StyleSheet.create({
   textBlock: { flex: 1 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 4 },
   subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.9)', lineHeight: 18 },
+  chevronContainer: { alignItems: 'center', justifyContent: 'center' },
+  badge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  badgeText: { fontSize: 11, fontWeight: '600', color: '#fff' },
 })

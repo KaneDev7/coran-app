@@ -354,15 +354,7 @@ export default function Lessons() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={styles.container}>
-        {/* Bouton retour à l'accueil */}
-        <Pressable
-          style={styles.homeBtn}
-          onPress={() => router.push('/')}
-          hitSlop={10}
-        >
-          <MaterialCommunityIcons name="home-variant-outline" size={18} color={primary} />
-          <Text style={styles.homeBtnText}>Accueil</Text>
-        </Pressable>
+ 
 
         {/* Recherche par sourate */}
         <View style={styles.searchBar}>
