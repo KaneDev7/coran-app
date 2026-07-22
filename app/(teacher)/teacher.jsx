@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons'
-import { primary } from '@/style/variables'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { sourates } from '@/constants/sorats.list'
 import { SurahCard } from '@/components/SurahCard'

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import { MaterialCommunityIcons } from '@expo/vector-icons'
 import DropDownPicker from 'react-native-dropdown-picker'
 import { primary, secondary, secondary3 } from '@/style/variables'
 import { StepHeader } from '@/components/teacher/StepHeader'
@@ -48,6 +49,18 @@ export default function TeacherPassageStep() {
           subtitle="Étape 2 — Choisissez la plage de versets"
           step={2}
         />
+
+        {/* Conseils pour une meilleure expérience */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipRow}>
+            <MaterialCommunityIcons name="volume-mute" size={20} color={primary} />
+            <Text style={styles.tipText}>Trouvez un endroit calme et sans trop de bruit fort</Text>
+          </View>
+          <View style={styles.tipRow}>
+            <MaterialCommunityIcons name="microphone" size={20} color={primary} />
+            <Text style={styles.tipText}>Testez votre micro avant de commencer</Text>
+          </View>
+        </View>
 
         <View style={styles.pickers}>
           <View style={[styles.pickerBlock, { zIndex: 3000 }]}>
@@ -97,6 +110,29 @@ export default function TeacherPassageStep() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: secondary3 },
   content: { flex: 1, padding: 16 },
+  tipsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 14,
+    gap: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    color: secondary,
+    lineHeight: 18,
+  },
   pickers: { flexDirection: 'row', gap: 16, marginTop: 12 },
   pickerBlock: { flex: 1, gap: 6 },
   label: {
