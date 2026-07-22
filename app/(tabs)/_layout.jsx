@@ -49,13 +49,12 @@ export default function TabsLayout() {
                 }}
               />
 
-
               <Tabs.Screen
                 name="lessons"
                 options={{
                   headerShadowVisible: false,
                   title: "hors ligne",
-                  tabBarIcon: ({ color, focused }) => <Feather name="wifi-off" tyle={{ opacity: focused ? 1 : .4 }} size={20} color={secondary} />,
+                  tabBarIcon: ({ color, focused }) => <Feather name="wifi-off" style={{ opacity: focused ? 1 : .4 }} size={20} color={secondary} />,
                 }}
               />
               <Tabs.Screen

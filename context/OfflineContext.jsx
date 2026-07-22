@@ -11,15 +11,22 @@ import {
 import { storeLessons } from '@/services/storage'
 import { useLibrary } from './LibraryContext'
 import { useReciter } from './ReciterContext'
+import { useAuth } from './AuthContext'
 
 // Domaine : sections téléchargées (leçons) et mode hors ligne.
+//
+// Les passages sont PROPRES À CHAQUE UTILISATEUR : les clés de stockage
+// incluent l'id de l'utilisateur connecté (lesson_<id>, downloadState_<id>).
 //
 // Suivi de téléchargement par verset :
 //   downloadState = { [lessonId]: { versets: { [numVerset]: statut } } }
 //   statut ∈ 'pending' | 'downloading' | 'done' | 'error'
 // L'état est persisté pour permettre de réessayer après un redémarrage.
 
-const DOWNLOAD_STATE_KEY = 'downloadState'
+// Anciennes clés globales (avant l'isolation par utilisateur) : leurs
+// données sont migrées vers le premier utilisateur qui se connecte.
+const LEGACY_LESSONS_KEY = 'lesson'
+const LEGACY_DOWNLOAD_STATE_KEY = 'downloadState'
 // Estimation prudente du poids d'un verset (audio + texte).
 const ESTIMATED_BYTES_PER_VERSE = 2 * 1024 * 1024
 // Marge de sécurité : on refuse de remplir le disque jusqu'au dernier octet.
@@ -31,6 +38,12 @@ export function OfflineProvider({ children }) {
   const { selectSartVerset, selectEndVerset, surahNumber, currentIndex } =
     useLibrary()
   const { reciter } = useReciter()
+  const { user } = useAuth()
+
+  // Clés de stockage propres à l'utilisateur connecté.
+  const userId = user?.id ?? 'anonymous'
+  const lessonsKey = `lesson_${userId}`
+  const downloadStateKey = `downloadState_${userId}`
 
   const [lessonList, setlessonList] = useState([])
   const [downloadProgressId, setDownloadProgressId] = useState('')
@@ -53,7 +66,7 @@ export function OfflineProvider({ children }) {
   const applyDownloadState = next => {
     downloadStateRef.current = next
     setDownloadState(next)
-    AsyncStorage.setItem(DOWNLOAD_STATE_KEY, JSON.stringify(next)).catch(
+    AsyncStorage.setItem(downloadStateKey, JSON.stringify(next)).catch(
       () => { }
     )
   }
@@ -84,12 +97,36 @@ export function OfflineProvider({ children }) {
     setActiveLessonId(null)
   }
 
+  // Migration : les passages sauvegardés AVANT l'isolation par
+  // utilisateur (clés globales) sont rattachés au premier utilisateur
+  // qui se connecte, puis les clés globales sont retirées.
+  const migrateLegacyData = async () => {
+    try {
+      const [legacyLessons, legacyState, userLessons] =
+        await Promise.all([
+          AsyncStorage.getItem(LEGACY_LESSONS_KEY),
+          AsyncStorage.getItem(LEGACY_DOWNLOAD_STATE_KEY),
+          AsyncStorage.getItem(lessonsKey),
+        ])
+
+      // On ne migre que si l'utilisateur n'a encore rien en propre.
+      if (userLessons !== null || legacyLessons === null) return
+
+      await AsyncStorage.setItem(lessonsKey, legacyLessons)
+      if (legacyState !== null) {
+        await AsyncStorage.setItem(downloadStateKey, legacyState)
+      }
+      await AsyncStorage.removeItem(LEGACY_LESSONS_KEY)
+      await AsyncStorage.removeItem(LEGACY_DOWNLOAD_STATE_KEY)
+    } catch (e) {
+      // migration best-effort
+    }
+  }
+
   const getLessons = async () => {
     try {
-      const value = (await AsyncStorage.getItem('lesson')) || []
-      if (value !== null) {
-        setlessonList(JSON.parse(value))
-      }
+      const value = (await AsyncStorage.getItem(lessonsKey)) || '[]'
+      setlessonList(JSON.parse(value))
     } catch (e) {
       // error reading value
     }
@@ -100,8 +137,12 @@ export function OfflineProvider({ children }) {
   // pour proposer un nouvel essai.
   const getDownloadState = async () => {
     try {
-      const raw = await AsyncStorage.getItem(DOWNLOAD_STATE_KEY)
-      if (!raw) return
+      const raw = await AsyncStorage.getItem(downloadStateKey)
+      if (!raw) {
+        downloadStateRef.current = {}
+        setDownloadState({})
+        return
+      }
       const stored = JSON.parse(raw)
       for (const lessonId of Object.keys(stored)) {
         const versets = stored[lessonId]?.versets || {}
@@ -203,7 +244,7 @@ export function OfflineProvider({ children }) {
 
     const updateLesson = [...lessonList, newLesson]
 
-    await storeLessons(updateLesson)
+    await storeLessons(lessonsKey, updateLesson)
     setlessonList(updateLesson)
     downloadLesson(newLesson)
 
@@ -214,7 +255,7 @@ export function OfflineProvider({ children }) {
     setIsDeleting(true)
     const lessonsFiltred = lessonList.filter(item => item.id !== id)
     setlessonList(lessonsFiltred)
-    await storeLessons(lessonsFiltred)
+    await storeLessons(lessonsKey, lessonsFiltred)
 
     // Purge le suivi de téléchargement de cette leçon.
     const { [id]: _removed, ...rest } = downloadStateRef.current
@@ -241,10 +282,16 @@ export function OfflineProvider({ children }) {
     setIsDeleting(false)
   }
 
+  // Rechargé à chaque changement d'utilisateur connecté : chacun ne
+  // voit que ses propres passages.
   useEffect(() => {
-    getLessons()
-    getDownloadState()
-  }, [])
+    const load = async () => {
+      await migrateLegacyData()
+      await getLessons()
+      await getDownloadState()
+    }
+    load()
+  }, [userId])
 
   return (
     <OfflineContext.Provider

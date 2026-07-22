@@ -10,45 +10,54 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  ScrollView,
 } from 'react-native'
 import { router } from 'expo-router'
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
 
-export default function Login() {
-  const { login, resendCode } = useAuth()
+export default function Register() {
+  const { register } = useAuth()
 
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const canSubmit = email.includes('@') && password.length > 0 && !isSubmitting
+  const canSubmit =
+    fullName.trim().length >= 2 &&
+    email.includes('@') &&
+    password.length >= 8 &&
+    confirmPassword.length >= 8 &&
+    !isSubmitting
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (!canSubmit) return
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas')
+      return
+    }
+
     setIsSubmitting(true)
     setError('')
 
-    const result = await login(email.trim(), password)
+    const result = await register(fullName.trim(), email.trim(), password)
     setIsSubmitting(false)
 
     if (!result.success) {
-      // Compte non activé : on renvoie un code et on amène l'utilisateur
-      // directement sur l'écran de vérification.
-      if (result.status === 403) {
-        const resend = await resendCode(email.trim())
-        router.push({
-          pathname: '/verify',
-          params: { email: email.trim(), devCode: resend.devCode },
-        })
-        return
-      }
       setError(result.error)
+      return
     }
-    // Si succès : la garde du layout racine bascule vers les onglets.
+
+    // Compte créé : vérification de l'email pour activer.
+    router.push({
+      pathname: '/verify',
+      params: { email: email.trim(), devCode: result.devCode },
+    })
   }
 
   return (
@@ -57,13 +66,33 @@ export default function Login() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.logoCircle}>
-            <MaterialCommunityIcons name="book-open-variant" size={44} color={primary} />
+            <MaterialCommunityIcons name="account-plus-outline" size={40} color={primary} />
           </View>
 
-          <Text style={styles.title}>Assalamou aleykoum</Text>
-          <Text style={styles.subtitle}>Connectez-vous pour écouter le Coran</Text>
+          <Text style={styles.title}>Créer un compte</Text>
+          <Text style={styles.subtitle}>
+            Un code de vérification vous sera envoyé par email
+          </Text>
+
+          <View style={styles.inputRow}>
+            <Feather name="user" size={18} color={secondary} />
+            <TextInput
+              style={styles.input}
+              value={fullName}
+              onChangeText={v => {
+                setFullName(v)
+                setError('')
+              }}
+              placeholder="Nom complet"
+              placeholderTextColor={secondary2}
+              autoComplete="name"
+            />
+          </View>
 
           <View style={styles.inputRow}>
             <Feather name="mail" size={18} color={secondary} />
@@ -91,7 +120,7 @@ export default function Login() {
                 setPassword(v)
                 setError('')
               }}
-              placeholder="Mot de passe"
+              placeholder="Mot de passe (8 caractères min.)"
               placeholderTextColor={secondary2}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
@@ -101,34 +130,43 @@ export default function Login() {
             </Pressable>
           </View>
 
+          <View style={styles.inputRow}>
+            <Feather name="lock" size={18} color={secondary} />
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={v => {
+                setConfirmPassword(v)
+                setError('')
+              }}
+              placeholder="Confirmer le mot de passe"
+              placeholderTextColor={secondary2}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+          </View>
+
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <Pressable
-            style={styles.forgotLink}
-            onPress={() => router.push('/forgot')}
-          >
-            <Text style={styles.linkText}>Mot de passe oublié ?</Text>
-          </Pressable>
-
-          <Pressable
             style={[styles.button, !canSubmit && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={handleRegister}
             disabled={!canSubmit}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Se connecter</Text>
+              <Text style={styles.buttonText}>S'inscrire</Text>
             )}
           </Pressable>
 
           <View style={styles.footerRow}>
-            <Text style={styles.footerText}>Pas encore de compte ?</Text>
-            <Pressable onPress={() => router.push('/register')}>
-              <Text style={styles.linkTextBold}> Créer un compte</Text>
+            <Text style={styles.footerText}>Déjà un compte ?</Text>
+            <Pressable onPress={() => router.back()}>
+              <Text style={styles.linkTextBold}> Se connecter</Text>
             </Pressable>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   )
@@ -140,19 +178,20 @@ const styles = StyleSheet.create({
     backgroundColor: secondary3,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 28,
     justifyContent: 'center',
+    paddingVertical: 40,
   },
   logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -160,17 +199,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 'bold',
     color: primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: secondary,
     textAlign: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   inputRow: {
     flexDirection: 'row',
@@ -193,21 +232,7 @@ const styles = StyleSheet.create({
     color: '#dc3545',
     fontSize: 13,
     textAlign: 'center',
-    marginBottom: 4,
-  },
-  forgotLink: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
-  },
-  linkText: {
-    color: secondary,
-    fontSize: 13,
-    textDecorationLine: 'underline',
-  },
-  linkTextBold: {
-    color: primary,
-    fontSize: 14,
-    fontWeight: 'bold',
+    marginBottom: 8,
   },
   button: {
     backgroundColor: primary,
@@ -215,6 +240,7 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 6,
   },
   buttonDisabled: {
     opacity: 0.4,
@@ -232,5 +258,10 @@ const styles = StyleSheet.create({
   footerText: {
     color: secondary,
     fontSize: 14,
+  },
+  linkTextBold: {
+    color: primary,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 })

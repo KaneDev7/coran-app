@@ -16,7 +16,6 @@ import {
 import { ConfirmDialog } from 'react-native-simple-dialogs'
 import { primary, secondary, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
-import { formatSenegalPhone } from '@/services/auth'
 
 // Liens externes : à remplacer par les vraies URLs quand elles existeront.
 const LINKS = [
@@ -62,12 +61,17 @@ export default function Settings() {
           <Feather name="user" size={30} color="#fff" />
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.profilePhone}>
-            +221 {formatSenegalPhone(user?.phone || '')}
-          </Text>
+          <Text style={styles.profileName}>{user?.fullName}</Text>
+          <Text style={styles.profileEmail}>{user?.email}</Text>
           <View style={styles.planBadge}>
-            <MaterialCommunityIcons name="account-outline" size={13} color={secondary} />
-            <Text style={styles.planBadgeText}>Compte gratuit</Text>
+            <MaterialCommunityIcons
+              name={user?.premium ? 'crown-outline' : 'account-outline'}
+              size={13}
+              color={secondary}
+            />
+            <Text style={styles.planBadgeText}>
+              {user?.premium ? 'Compte Premium' : 'Compte gratuit'}
+            </Text>
           </View>
         </View>
       </View>
@@ -170,10 +174,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
-  profilePhone: {
+  profileName: {
     fontSize: 17,
     fontWeight: 'bold',
     color: primary,
+  },
+  profileEmail: {
+    fontSize: 13,
+    color: secondary,
   },
   planBadge: {
     flexDirection: 'row',

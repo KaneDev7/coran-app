@@ -13,15 +13,15 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
-import { formatSenegalPhone } from '@/services/auth'
 
 const CODE_LENGTH = 6
 
 export default function Verify() {
-  const { phone, mockCode } = useLocalSearchParams()
-  const { confirmCode, requestCode } = useAuth()
+  const { email, devCode: initialDevCode } = useLocalSearchParams()
+  const { confirmEmail, resendCode } = useAuth()
 
   const [code, setCode] = useState('')
+  const [devCode, setDevCode] = useState(initialDevCode)
   const [error, setError] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
   const [resendMessage, setResendMessage] = useState('')
@@ -35,7 +35,7 @@ export default function Verify() {
     // Vérification automatique dès que le code est complet.
     if (digits.length === CODE_LENGTH && !isVerifying) {
       setIsVerifying(true)
-      const result = await confirmCode(phone, digits)
+      const result = await confirmEmail(email, digits)
       setIsVerifying(false)
 
       if (!result.success) {
@@ -49,8 +49,9 @@ export default function Verify() {
   const handleResend = async () => {
     setError('')
     setCode('')
-    const result = await requestCode(phone)
+    const result = await resendCode(email)
     if (result.success) {
+      if (result.devCode) setDevCode(result.devCode)
       setResendMessage('Nouveau code envoyé')
       setTimeout(() => setResendMessage(''), 3000)
     }
@@ -63,13 +64,13 @@ export default function Verify() {
     >
       <View style={styles.content}>
         <View style={styles.logoCircle}>
-          <MaterialCommunityIcons name="message-lock-outline" size={40} color={primary} />
+          <MaterialCommunityIcons name="email-check-outline" size={40} color={primary} />
         </View>
 
-        <Text style={styles.title}>Vérification</Text>
+        <Text style={styles.title}>Vérifiez votre email</Text>
         <Text style={styles.subtitle}>
-          Entrez le code à 6 chiffres envoyé au{'\n'}
-          <Text style={styles.phoneText}>+221 {formatSenegalPhone(phone || '')}</Text>
+          Entrez le code à 6 chiffres envoyé à{'\n'}
+          <Text style={styles.emailText}>{email}</Text>
         </Text>
 
         {/* Un seul TextInput invisible pilote les 6 cases. */}
@@ -101,17 +102,17 @@ export default function Verify() {
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         {resendMessage ? <Text style={styles.successText}>{resendMessage}</Text> : null}
 
-        {/* MOCK : à retirer quand le vrai backend enverra les SMS. */}
-        {mockCode ? (
+        {/* MOCK : visible tant que le SMTP n'est pas configuré. */}
+        {devCode ? (
           <View style={styles.mockBox}>
             <MaterialCommunityIcons name="flask-outline" size={16} color={secondary} />
-            <Text style={styles.mockText}>Mode test — code : {mockCode}</Text>
+            <Text style={styles.mockText}>Mode test — code : {devCode}</Text>
           </View>
         ) : null}
 
         <View style={styles.actionsRow}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.actionLink}>Modifier le numéro</Text>
+            <Text style={styles.actionLink}>Retour</Text>
           </Pressable>
           <Pressable onPress={handleResend}>
             <Text style={styles.actionLink}>Renvoyer le code</Text>
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 28,
   },
-  phoneText: {
+  emailText: {
     fontWeight: 'bold',
     color: primary,
   },

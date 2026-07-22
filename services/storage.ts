@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export const  storeLessons = async (value: string) => {
+// Les passages hors ligne sont propres à chaque utilisateur : la clé
+// de stockage inclut son id (ex. "lesson_663f...").
+export const storeLessons = async (storageKey: string, value: unknown) => {
   try {
     const jsonValue = JSON.stringify(value)
-    await AsyncStorage.setItem('lesson', jsonValue)
+    await AsyncStorage.setItem(storageKey, jsonValue)
   } catch (e) {
     // saving error
   }
@@ -17,5 +19,3 @@ export const storeReciter = async (value: string) => {
     // saving error
   }
 }
-
-

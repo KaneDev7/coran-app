@@ -11,44 +11,53 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
 
-export default function Login() {
-  const { login, resendCode } = useAuth()
+export default function ResetPassword() {
+  const { email, devCode } = useLocalSearchParams()
+  const { resetPassword } = useAuth()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const canSubmit = email.includes('@') && password.length > 0 && !isSubmitting
+  const canSubmit = code.length === 6 && newPassword.length >= 8 && !isSubmitting
 
-  const handleLogin = async () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return
     setIsSubmitting(true)
     setError('')
 
-    const result = await login(email.trim(), password)
+    const result = await resetPassword(email, code, newPassword)
     setIsSubmitting(false)
 
     if (!result.success) {
-      // Compte non activé : on renvoie un code et on amène l'utilisateur
-      // directement sur l'écran de vérification.
-      if (result.status === 403) {
-        const resend = await resendCode(email.trim())
-        router.push({
-          pathname: '/verify',
-          params: { email: email.trim(), devCode: resend.devCode },
-        })
-        return
-      }
       setError(result.error)
+      return
     }
-    // Si succès : la garde du layout racine bascule vers les onglets.
+    setSuccess(true)
+  }
+
+  if (success) {
+    return (
+      <View style={[styles.container, styles.successContainer]}>
+        <MaterialCommunityIcons name="check-circle-outline" size={64} color="#2e7d32" />
+        <Text style={styles.successTitle}>Mot de passe réinitialisé</Text>
+        <Text style={styles.subtitle}>
+          Vous pouvez maintenant vous connecter avec votre nouveau mot de
+          passe
+        </Text>
+        <Pressable style={styles.button} onPress={() => router.dismissAll()}>
+          <Text style={styles.buttonText}>Se connecter</Text>
+        </Pressable>
+      </View>
+    )
   }
 
   return (
@@ -59,26 +68,29 @@ export default function Login() {
       >
         <View style={styles.content}>
           <View style={styles.logoCircle}>
-            <MaterialCommunityIcons name="book-open-variant" size={44} color={primary} />
+            <MaterialCommunityIcons name="lock-reset" size={40} color={primary} />
           </View>
 
-          <Text style={styles.title}>Assalamou aleykoum</Text>
-          <Text style={styles.subtitle}>Connectez-vous pour écouter le Coran</Text>
+          <Text style={styles.title}>Réinitialisation</Text>
+          <Text style={styles.subtitle}>
+            Entrez le code reçu sur{'\n'}
+            <Text style={styles.emailText}>{email}</Text>
+          </Text>
 
           <View style={styles.inputRow}>
-            <Feather name="mail" size={18} color={secondary} />
+            <Feather name="hash" size={18} color={secondary} />
             <TextInput
               style={styles.input}
-              value={email}
+              value={code}
               onChangeText={v => {
-                setEmail(v)
+                setCode(v.replace(/\D/g, '').slice(0, 6))
                 setError('')
               }}
-              placeholder="Adresse email"
+              placeholder="Code à 6 chiffres"
               placeholderTextColor={secondary2}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
             />
           </View>
 
@@ -86,12 +98,12 @@ export default function Login() {
             <Feather name="lock" size={18} color={secondary} />
             <TextInput
               style={styles.input}
-              value={password}
+              value={newPassword}
               onChangeText={v => {
-                setPassword(v)
+                setNewPassword(v)
                 setError('')
               }}
-              placeholder="Mot de passe"
+              placeholder="Nouveau mot de passe (8 min.)"
               placeholderTextColor={secondary2}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
@@ -103,31 +115,29 @@ export default function Login() {
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <Pressable
-            style={styles.forgotLink}
-            onPress={() => router.push('/forgot')}
-          >
-            <Text style={styles.linkText}>Mot de passe oublié ?</Text>
-          </Pressable>
+          {/* MOCK : visible tant que le SMTP n'est pas configuré. */}
+          {devCode ? (
+            <View style={styles.mockBox}>
+              <MaterialCommunityIcons name="flask-outline" size={16} color={secondary} />
+              <Text style={styles.mockText}>Mode test — code : {devCode}</Text>
+            </View>
+          ) : null}
 
           <Pressable
             style={[styles.button, !canSubmit && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={handleSubmit}
             disabled={!canSubmit}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Se connecter</Text>
+              <Text style={styles.buttonText}>Réinitialiser</Text>
             )}
           </Pressable>
 
-          <View style={styles.footerRow}>
-            <Text style={styles.footerText}>Pas encore de compte ?</Text>
-            <Pressable onPress={() => router.push('/register')}>
-              <Text style={styles.linkTextBold}> Créer un compte</Text>
-            </Pressable>
-          </View>
+          <Pressable style={styles.backLink} onPress={() => router.back()}>
+            <Text style={styles.linkText}>Modifier l'email</Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
@@ -139,20 +149,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: secondary3,
   },
+  successContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    gap: 12,
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2e7d32',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 28,
     justifyContent: 'center',
   },
   logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -160,17 +181,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 'bold',
     color: primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: secondary,
     textAlign: 'center',
-    marginBottom: 28,
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  emailText: {
+    fontWeight: 'bold',
+    color: primary,
   },
   inputRow: {
     flexDirection: 'row',
@@ -193,21 +219,26 @@ const styles = StyleSheet.create({
     color: '#dc3545',
     fontSize: 13,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  forgotLink: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
+  mockBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 14,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: secondary2,
+    borderStyle: 'dashed',
   },
-  linkText: {
-    color: secondary,
+  mockText: {
     fontSize: 13,
-    textDecorationLine: 'underline',
-  },
-  linkTextBold: {
-    color: primary,
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: secondary,
   },
   button: {
     backgroundColor: primary,
@@ -215,6 +246,7 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 40,
   },
   buttonDisabled: {
     opacity: 0.4,
@@ -224,13 +256,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  backLink: {
+    alignSelf: 'center',
     marginTop: 22,
   },
-  footerText: {
-    color: secondary,
+  linkText: {
+    color: primary,
     fontSize: 14,
+    textDecorationLine: 'underline',
   },
 })

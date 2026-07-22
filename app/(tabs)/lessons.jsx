@@ -26,12 +26,8 @@ import { EmptyList } from "../../components/EmptyList";
 import * as Progress from "react-native-progress";
 
 // Recherche tolérante aux accents.
-const normalize = value =>
-  String(value)
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+const normalize = (value) =>
+  String(value).trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 // Statut global d'un passage à partir des statuts de ses versets.
 // Un passage sans suivi (anciens téléchargements) est considéré complet.
@@ -39,9 +35,9 @@ const getLessonStatus = (lesson, downloadState) => {
   const versets = downloadState[lesson.id]?.versets;
   if (!versets) return "complete";
   const values = Object.values(versets);
-  if (values.some(s => s === "downloading" || s === "pending"))
+  if (values.some((s) => s === "downloading" || s === "pending"))
     return "downloading";
-  if (values.some(s => s === "error")) return "error";
+  if (values.some((s) => s === "error")) return "error";
   return "complete";
 };
 
@@ -57,7 +53,10 @@ const STATUS_FILTERS = [
 const VerseChip = ({ verseNumber, status, onRetry }) => {
   if (status === "error") {
     return (
-      <Pressable style={[styles.verseChip, styles.verseChipError]} onPress={onRetry}>
+      <Pressable
+        style={[styles.verseChip, styles.verseChipError]}
+        onPress={onRetry}
+      >
         <MaterialCommunityIcons name="refresh" size={13} color="#fff" />
         <Text style={styles.verseChipErrorText}>v-{verseNumber}</Text>
       </Pressable>
@@ -74,13 +73,27 @@ const VerseChip = ({ verseNumber, status, onRetry }) => {
       ]}
     >
       {isActive ? (
-        <Progress.Circle size={12} indeterminate borderWidth={1.5} color={primary} />
+        <Progress.Circle
+          size={12}
+          indeterminate
+          borderWidth={1.5}
+          color={primary}
+        />
       ) : status === "done" ? (
         <MaterialCommunityIcons name="check" size={13} color="#2e7d32" />
       ) : (
-        <MaterialCommunityIcons name="clock-outline" size={13} color={secondary} />
+        <MaterialCommunityIcons
+          name="clock-outline"
+          size={13}
+          color={secondary}
+        />
       )}
-      <Text style={[styles.verseChipText, status === "done" && styles.verseChipDoneText]}>
+      <Text
+        style={[
+          styles.verseChipText,
+          status === "done" && styles.verseChipDoneText,
+        ]}
+      >
         v-{verseNumber}
       </Text>
     </View>
@@ -113,11 +126,12 @@ const Item = ({ item, index }) => {
   const doneCount = statusEntries.filter(([, s]) => s === "done").length;
   const errorCount = statusEntries.filter(([, s]) => s === "error").length;
   const isDownloading = statusEntries.some(
-    ([, s]) => s === "downloading" || s === "pending"
+    ([, s]) => s === "downloading" || s === "pending",
   );
   // Le suivi n'est affiché que s'il reste quelque chose à faire :
   // téléchargement en cours ou versets en erreur.
-  const showDownloadSection = versetsStatus && (isDownloading || errorCount > 0);
+  const showDownloadSection =
+    versetsStatus && (isDownloading || errorCount > 0);
 
   // Passage actuellement chargé dans le lecteur.
   const isActiveLesson = isOfflineMode && activeLessonId === item.id;
@@ -141,9 +155,18 @@ const Item = ({ item, index }) => {
       >
         <View style={styles.cardRow}>
           <View style={styles.leftContent}>
-            <View style={[styles.courseNumber, isActiveLesson && styles.courseNumberActive]}>
+            <View
+              style={[
+                styles.courseNumber,
+                isActiveLesson && styles.courseNumberActive,
+              ]}
+            >
               {isActiveLesson ? (
-                <MaterialCommunityIcons name="headphones" size={20} color="#fff" />
+                <MaterialCommunityIcons
+                  name="headphones"
+                  size={20}
+                  color="#fff"
+                />
               ) : (
                 <Text style={styles.courseNumberText}>{index + 1}</Text>
               )}
@@ -151,13 +174,17 @@ const Item = ({ item, index }) => {
             <View style={styles.courseInfo}>
               <View style={styles.titleRow}>
                 <Text style={styles.lessonTitle}>
-                  <FontAwesome name="download" size={14} color={primary} /> Passage {" "}
-                  {String(index + 1).padStart(2, "0")}
+                  <FontAwesome name="download" size={14} color={primary} />{" "}
+                  Passage {String(index + 1).padStart(2, "0")}
                 </Text>
                 {/* Indicateur : passage en cours d'écoute */}
                 {isActiveLesson && (
                   <View style={styles.playingBadge}>
-                    <MaterialCommunityIcons name="volume-high" size={12} color="#fff" />
+                    <MaterialCommunityIcons
+                      name="volume-high"
+                      size={12}
+                      color="#fff"
+                    />
                     <Text style={styles.playingBadgeText}>En écoute</Text>
                   </View>
                 )}
@@ -227,8 +254,14 @@ const Item = ({ item, index }) => {
                   Téléchargement en cours… {doneCount}/{totalCount}
                 </Text>
               ) : (
-                <Text style={[styles.downloadStatusText, styles.downloadStatusError]}>
-                  {errorCount} verset{errorCount > 1 ? "s" : ""} en erreur — appuyez pour réessayer
+                <Text
+                  style={[
+                    styles.downloadStatusText,
+                    styles.downloadStatusError,
+                  ]}
+                >
+                  {errorCount} verset{errorCount > 1 ? "s" : ""} en erreur —
+                  appuyez pour réessayer
                 </Text>
               )}
             </View>
@@ -288,7 +321,7 @@ export default function Lessons() {
   const sections = useMemo(() => {
     const q = normalize(query);
 
-    const filtered = lessonList.filter(lesson => {
+    const filtered = lessonList.filter((lesson) => {
       const nom = sourates[parseFloat(lesson.index)]?.nom || "";
       if (q && !normalize(nom).includes(q)) return false;
       if (
@@ -300,7 +333,7 @@ export default function Lessons() {
     });
 
     const bySourate = new Map();
-    filtered.forEach(lesson => {
+    filtered.forEach((lesson) => {
       const nom = sourates[parseFloat(lesson.index)]?.nom || "Autre";
       if (!bySourate.has(nom)) bySourate.set(nom, []);
       bySourate.get(nom).push(lesson);
@@ -344,7 +377,7 @@ export default function Lessons() {
 
         {/* Filtres par statut */}
         <View style={styles.filtersRow}>
-          {STATUS_FILTERS.map(filter => (
+          {STATUS_FILTERS.map((filter) => (
             <Pressable
               key={filter.key}
               style={[
@@ -383,7 +416,7 @@ export default function Lessons() {
                 </Text>
               </View>
             )}
-            keyExtractor={item => String(item.id)}
+            keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
             stickySectionHeadersEnabled={false}
@@ -427,6 +460,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginHorizontal: 16,
     marginTop: 10,
+    paddingBottom: 10,
   },
   filterChip: {
     borderRadius: 20,
