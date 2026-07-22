@@ -161,13 +161,27 @@ export async function resetPassword(email, code, newPassword) {
 }
 
 // Recharge la session au démarrage : profil via l'access token stocké,
-// avec rafraîchissement automatique si expiré.
+// avec rafraîchissement automatique si expiré. Timeout après 5s pour éviter le blocage.
 export async function fetchCurrentUser() {
   const token = await getAccessToken()
   if (!token) return null
 
-  const result = await authenticatedRequest('/users/me', { method: 'GET' })
-  return result.success ? result : null
+  try {
+    // Timeout de 5 secondes pour éviter le blocage indéfini
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), 5000)
+    )
+
+    const result = await Promise.race([
+      authenticatedRequest('/users/me', { method: 'GET' }),
+      timeoutPromise,
+    ])
+
+    return result.success ? result : null
+  } catch (error) {
+    // En cas d'erreur ou timeout, on retourne null sans bloquer
+    return null
+  }
 }
 
 export async function signOut() {
