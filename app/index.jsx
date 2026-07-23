@@ -51,7 +51,7 @@ export default function Home() {
           icon="brain"
           title="Apprendre avec l'IA"
           subtitle="Vous récitez, l'IA écoute et détecte les erreurs de prononciation."
-          colors={['#7b2cbf', '#5a189a']}
+          colors={['#321e8a', '#2d1e64']}
           badge="À venir"
           disabled
         />
