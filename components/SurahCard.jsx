@@ -5,18 +5,22 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 // Carte sourate présentationnelle, réutilisable (mode Professeur,
 // et pourra remplacer le visuel de SourateItem).
-export function SurahCard({ item, onPress, disabled }) {
+export function SurahCard({ item, onPress, disabled, selected }) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.container,
         pressed && styles.pressed,
         disabled && styles.disabled,
+        selected && styles.selected,
       ]}
       onPress={onPress}
       disabled={disabled}
     >
-      <LinearGradient colors={['#ffffff', '#f8f9fa']} style={styles.card}>
+      <LinearGradient
+        colors={selected ? ['#eaf5eb', '#ddeede'] : ['#ffffff', '#f8f9fa']}
+        style={styles.card}
+      >
         <View style={styles.leftContent}>
           <View style={styles.numberCircle}>
             <Text style={styles.numberText}>{item.numero}</Text>
@@ -60,6 +64,10 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   disabled: { opacity: 0.6 },
+  selected: {
+    borderWidth: 2,
+    borderColor: '#2e7d32',
+  },
   leftContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   numberCircle: {
     width: 40,

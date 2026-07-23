@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import DropDownPicker from 'react-native-dropdown-picker'
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { sourates } from '@/constants/sorats.list'
@@ -23,12 +24,29 @@ import { getSavedSessions, deleteSession } from '@/services/teacherStorage'
 const normalize = value =>
   value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
+// Écran combiné : choix de la sourate ET de la plage de versets dans une
+// seule interface. La sélection d'une sourate révèle un panneau en bas
+// (versets + Continuer), sans changer d'écran.
 export default function TeacherSurahStep() {
-  const { selectSurah, loadConfig } = useTeacher()
+  const {
+    selectSurah,
+    loadConfig,
+    surah,
+    surahIndex,
+    versesCount,
+    startVerse,
+    endVerse,
+    setStartVerse,
+    setEndVerse,
+  } = useTeacher()
   const { user } = useAuth()
 
   const [query, setQuery] = useState('')
   const [saved, setSaved] = useState([])
+  // Une sourate a-t-elle été choisie ? (révèle le panneau versets)
+  const [picked, setPicked] = useState(false)
+  const [openStart, setOpenStart] = useState(false)
+  const [openEnd, setOpenEnd] = useState(false)
 
   useEffect(() => {
     getSavedSessions(user?.id).then(setSaved)
@@ -42,9 +60,31 @@ export default function TeacherSurahStep() {
     )
   }, [query])
 
+  const verseItems = useMemo(
+    () =>
+      Array.from({ length: versesCount }).map((_, i) => ({
+        label: `Verset ${i + 1}`,
+        value: i + 1,
+      })),
+    [versesCount],
+  )
+
+  const verseSpan = endVerse - startVerse + 1
+
   const handleSelectSurah = index => {
     selectSurah(index)
-    router.push('/passage')
+    setPicked(true)
+    setOpenStart(false)
+    setOpenEnd(false)
+  }
+
+  const handleStart = value => {
+    setStartVerse(value)
+    if (value > endVerse) setEndVerse(value)
+  }
+  const handleEnd = value => {
+    if (value < startVerse) setEndVerse(startVerse)
+    else setEndVerse(value)
   }
 
   const handleResume = config => {
@@ -64,8 +104,9 @@ export default function TeacherSurahStep() {
           <View style={styles.homeRow}>
             <StepHeader
               title="Mode Professeur"
-              subtitle="Étape 1 — Choisissez une sourate"
+              subtitle="Étape 1 — Sourate et versets"
               step={1}
+              totalSteps={2}
             />
             <Pressable
               style={styles.homeIconBtn}
@@ -130,10 +171,64 @@ export default function TeacherSurahStep() {
           renderItem={({ item }) => (
             <SurahCard
               item={item}
+              selected={picked && surahIndex === item.numero - 1}
               onPress={() => handleSelectSurah(item.numero - 1)}
             />
           )}
         />
+
+        {/* Panneau versets : apparaît une fois une sourate choisie */}
+        {picked && (
+          <View style={styles.footer}>
+            <View style={styles.footerHead}>
+              <MaterialCommunityIcons name="book-open-variant" size={18} color={primary} />
+              <Text style={styles.footerTitle} numberOfLines={1}>
+                {surah?.nom}
+              </Text>
+              <Text style={styles.footerSpan}>
+                {verseSpan} verset{verseSpan > 1 ? 's' : ''}
+              </Text>
+            </View>
+
+            <View style={styles.pickers}>
+              <View style={[styles.pickerBlock, { zIndex: 3000 }]}>
+                <Text style={styles.pickerLabel}>Du verset</Text>
+                <DropDownPicker
+                  open={openStart}
+                  setOpen={setOpenStart}
+                  value={startVerse}
+                  items={verseItems}
+                  setValue={cb => handleStart(cb(startVerse))}
+                  onSelectItem={item => handleStart(item.value)}
+                  maxHeight={220}
+                  listMode="SCROLLVIEW"
+                  dropDownDirection="TOP"
+                  style={styles.dropdown}
+                />
+              </View>
+              <View style={[styles.pickerBlock, { zIndex: 2000 }]}>
+                <Text style={styles.pickerLabel}>Au verset</Text>
+                <DropDownPicker
+                  open={openEnd}
+                  setOpen={setOpenEnd}
+                  value={endVerse}
+                  items={verseItems}
+                  setValue={cb => handleEnd(cb(endVerse))}
+                  onSelectItem={item => handleEnd(item.value)}
+                  maxHeight={220}
+                  listMode="SCROLLVIEW"
+                  dropDownDirection="TOP"
+                  style={styles.dropdown}
+                />
+              </View>
+            </View>
+
+            <Pressable style={styles.continueBtn} onPress={() => router.push('/options')}>
+              <Text style={styles.continueText}>Continuer</Text>
+              <Feather name="arrow-right" size={18} color="#fff" />
+            </Pressable>
+          </View>
+        )}
       </SafeAreaView>
     </TouchableWithoutFeedback>
   )
@@ -182,4 +277,53 @@ const styles = StyleSheet.create({
   },
   savedName: { fontSize: 15, fontWeight: '600', color: primary },
   savedMeta: { fontSize: 12, color: secondary, marginTop: 2, textTransform: 'capitalize' },
+  footer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 18,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  footerHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  footerTitle: { flex: 1, fontSize: 16, fontWeight: 'bold', color: primary },
+  footerSpan: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: secondary,
+    backgroundColor: secondary3,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  pickers: { flexDirection: 'row', gap: 12 },
+  pickerBlock: { flex: 1, gap: 4 },
+  pickerLabel: {
+    fontSize: 11,
+    color: secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dropdown: { borderColor: secondary2 },
+  continueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    backgroundColor: primary,
+    borderRadius: 14,
+    height: 52,
+  },
+  continueText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 })

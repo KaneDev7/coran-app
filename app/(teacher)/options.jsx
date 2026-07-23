@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   Image,
-  FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -26,6 +25,13 @@ import {
 
 const MIN_REP = 1
 const MAX_REP = 20
+
+// Sélection restreinte : les 3 premiers réciteurs + le tout dernier
+// (4 au total), pour tenir sur une ligne sans défilement horizontal.
+const DISPLAYED_RECITERS = [
+  ...reciteurs.slice(0, 3),
+  reciteurs[reciteurs.length - 1],
+]
 
 export default function TeacherOptionsStep() {
   const {
@@ -69,8 +75,21 @@ export default function TeacherOptionsStep() {
         <StepHeader
           title="Réglages"
           subtitle={`${surah?.nom} · versets ${startVerse}-${endVerse}`}
-          step={3}
+          step={2}
+          totalSteps={2}
         />
+
+        {/* Conseils pour une meilleure expérience */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipRow}>
+            <MaterialCommunityIcons name="volume-mute" size={20} color={primary} />
+            <Text style={styles.tipText}>Trouvez un endroit calme et sans trop de bruit fort</Text>
+          </View>
+          <View style={styles.tipRow}>
+            <MaterialCommunityIcons name="microphone" size={20} color={primary} />
+            <Text style={styles.tipText}>Testez votre micro avant de commencer</Text>
+          </View>
+        </View>
 
         {/* Répétitions par verset */}
         <View style={styles.card}>
@@ -103,16 +122,12 @@ export default function TeacherOptionsStep() {
           <Text style={styles.cardHint}>
             La voix qui récite le verset avant que vous ne le répétiez
           </Text>
-          <FlatList
-            data={reciteurs}
-            keyExtractor={item => item.title}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingVertical: 4 }}
-            renderItem={({ item }) => {
+          <View style={styles.reciterRow}>
+            {DISPLAYED_RECITERS.map(item => {
               const active = item.title === reciter
               return (
                 <Pressable
+                  key={item.title}
                   style={styles.reciterItem}
                   onPress={() => setReciter(item.title)}
                 >
@@ -124,8 +139,8 @@ export default function TeacherOptionsStep() {
                   </Text>
                 </Pressable>
               )
-            }}
-          />
+            })}
+          </View>
         </View>
 
         {/* Vitesse */}
@@ -192,6 +207,20 @@ export default function TeacherOptionsStep() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: secondary3 },
   content: { padding: 16, paddingBottom: 24 },
+  tipsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 14,
+    gap: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  tipRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  tipText: { flex: 1, fontSize: 13, color: secondary, lineHeight: 18 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -221,6 +250,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepperValue: { fontSize: 30, fontWeight: 'bold', color: primary, minWidth: 44, textAlign: 'center' },
+  reciterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
   reciterItem: { alignItems: 'center', width: 68, gap: 4 },
   avatarRing: {
     width: 60,
