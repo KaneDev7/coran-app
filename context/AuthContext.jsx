@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   // évite un flash de l'écran de connexion au démarrage.
   const [isAuthLoading, setIsAuthLoading] = useState(true)
 
+
   useEffect(() => {
     authApi
       .fetchCurrentUser()
