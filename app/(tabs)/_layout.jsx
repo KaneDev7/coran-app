@@ -75,12 +75,14 @@ export default function TabsLayout() {
                 }}
               />
 
+              {/* Paramètres : accessible via l'icône ⚙️ de l'accueil, mais
+                  retiré de la barre d'onglets (href: null) → 4 onglets. */}
               <Tabs.Screen
                 name="settings"
                 options={{
+                  href: null,
                   headerShadowVisible: false,
                   title: 'Paramètres',
-                  tabBarIcon: ({ color, focused }) => <Feather name="settings" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
                 }}
               />
 
