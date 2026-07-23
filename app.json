@@ -25,7 +25,8 @@
       },
       "permissions": [
         "FOREGROUND_SERVICE",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.anonymous.application"
     },
@@ -48,7 +49,7 @@
       [
         "expo-av",
         {
-          "microphonePermission": false
+          "microphonePermission": "L'application utilise le micro pour détecter votre récitation en mode Professeur."
         }
       ],
       "expo-font",

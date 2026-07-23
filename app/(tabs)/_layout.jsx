@@ -6,7 +6,6 @@ import { StatusBar } from 'expo-status-bar';
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Feather from '@expo/vector-icons/Feather';
-import { MaterialIcons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { secondary } from '@/style/variables';
 
@@ -42,7 +41,7 @@ export default function TabsLayout() {
           <PlayerProvider>
             <Tabs screenOptions={{ tabBarActiveTintColor: secondary }}>
               <Tabs.Screen
-                name="index"
+                name="sourates"
                 options={{
                   title: 'Sourates',
                   tabBarIcon: ({ color, focused }) => <Entypo name="list" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
@@ -72,15 +71,6 @@ export default function TabsLayout() {
                   headerShadowVisible: false,
                   title: 'Réciteurs',
                   tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
-                }}
-              />
-
-              <Tabs.Screen
-                name="settings"
-                options={{
-                  headerShadowVisible: false,
-                  title: 'Paramètres',
-                  tabBarIcon: ({ color, focused }) => <Feather name="settings" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
                 }}
               />
 

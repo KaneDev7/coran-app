@@ -12,7 +12,7 @@ export default function SourahSelect() {
     const { isOfflineMode } = useOffline()
     return (
         <Pressable
-            onPress={() => router.push('/')}
+            onPress={() => router.push('/sourates')}
             // En mode hors ligne, le changement de sourate est verrouillé.
             disabled={isOfflineMode}
             style={[styles.container, isOfflineMode && styles.locked]}
