@@ -70,11 +70,11 @@ export default function TeacherSession() {
     return () => clearInterval(id)
   }, [startedAt])
 
-  // Arrête la séance et revient à la liste des sourates du mode
-  // Professeur pour en démarrer une nouvelle.
+  // Arrête la séance et revient à l'écran de nouvelle séance (liste des
+  // sourates) du mode Professeur pour en démarrer une autre.
   const handleStop = () => {
     stop()
-    router.replace('/teacher')
+    router.replace('/new')
   }
 
   const isPaused = phase === 'paused'
