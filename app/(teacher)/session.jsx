@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
   },
-  micZone: { alignItems: 'center', marginVertical: 12 },
+  micZone: { alignItems: 'center', marginTop: 12 },
   rateControl: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -308,5 +308,5 @@ const styles = StyleSheet.create({
     color: secondary,
     lineHeight: 15,
   },
-  controls: { marginBottom: 8 },
+  controls: { marginBottom: 8, marginTop : 12 },
 })

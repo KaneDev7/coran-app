@@ -50,3 +50,26 @@ export async function deleteSession(userId, id) {
     return false
   }
 }
+
+// ---- Réglages par défaut d'une nouvelle séance ----
+// Persistés par utilisateur : vitesse, sensibilité micro, répétitions.
+// Une nouvelle séance démarre avec les dernières valeurs utilisées.
+const defaultsKey = userId => `teacher_defaults_${userId ?? 'anonymous'}`
+
+export async function getDefaults(userId) {
+  try {
+    const raw = await AsyncStorage.getItem(defaultsKey(userId))
+    return raw ? JSON.parse(raw) : null
+  } catch (e) {
+    return null
+  }
+}
+
+export async function saveDefaults(userId, defaults) {
+  try {
+    await AsyncStorage.setItem(defaultsKey(userId), JSON.stringify(defaults))
+    return true
+  } catch (e) {
+    return false
+  }
+}

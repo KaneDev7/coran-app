@@ -10,13 +10,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons'
+import { ConfirmDialog } from 'react-native-simple-dialogs'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { reciteurs } from '@/constants/reciteurs'
 import { InputRange } from '@/components/ui/InputRange'
 import { StepHeader } from '@/components/teacher/StepHeader'
 import { useTeacher } from '@/context/TeacherContext'
-import { useAuth } from '@/context/AuthContext'
-import { saveSession } from '@/services/teacherStorage'
 import {
   sensitivityLabel,
   MIN_SENSITIVITY_DB,
@@ -35,7 +34,6 @@ const DISPLAYED_RECITERS = [
 
 export default function TeacherOptionsStep() {
   const {
-    surahIndex,
     surah,
     startVerse,
     endVerse,
@@ -47,26 +45,21 @@ export default function TeacherOptionsStep() {
     setRate,
     settings,
     setSensitivity,
+    saveSessionOffline,
   } = useTeacher()
-  const { user } = useAuth()
 
-  const [saved, setSaved] = useState(false)
+  // Modal de confirmation avant téléchargement hors ligne.
+  const [confirmVisible, setConfirmVisible] = useState(false)
 
   const changeRep = delta =>
-    setRepetitions(r => Math.max(MIN_REP, Math.min(MAX_REP, r + delta)))
+    setRepetitions(Math.max(MIN_REP, Math.min(MAX_REP, repetitions + delta)))
 
-  const handleSave = async () => {
-    await saveSession(user?.id, {
-      surahIndex,
-      startVerse,
-      endVerse,
-      reciter,
-      repetitions,
-      rate,
-      sensitivityDb: settings.sensitivityDb,
-    })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  // Enregistre + télécharge la séance pour un accès hors ligne, puis
+  // redirige vers la liste des séances (où la progression s'affiche).
+  const handleConfirmSave = async () => {
+    setConfirmVisible(false)
+    await saveSessionOffline()
+    router.replace('/saved')
   }
 
   return (
@@ -162,12 +155,8 @@ export default function TeacherOptionsStep() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sensibilité du micro</Text>
           <Text style={styles.cardHint}>
-            Détermine à partir de quel volume le micro considère que vous
-            récitez. Dans un endroit bruyant, glissez vers la droite : le micro
-            devient moins sensible, ignore les bruits de fond et détecte mieux
-            la fin de votre récitation. S'il « reste bloqué » en écoute alors
-            que vous avez fini, c'est qu'il est trop sensible. Réglable aussi
-            en direct pendant la séance.
+            Endroit bruyant ? Glissez vers la droite pour ignorer les bruits
+            de fond. Réglable aussi en direct.
           </Text>
           <View style={styles.rateRow}>
             <MaterialCommunityIcons name="volume-low" size={20} color={secondary} />
@@ -181,25 +170,29 @@ export default function TeacherOptionsStep() {
           </View>
           <Text style={styles.rateValue}>{sensitivityLabel(settings.sensitivityDb)}</Text>
         </View>
-
-        <Pressable style={styles.saveBtn} onPress={handleSave}>
-          <MaterialCommunityIcons
-            name={saved ? 'check' : 'content-save-outline'}
-            size={18}
-            color={primary}
-          />
-          <Text style={styles.saveText}>
-            {saved ? 'Passage enregistré' : 'Enregistrer ce passage'}
-          </Text>
-        </Pressable>
       </ScrollView>
 
       <View style={styles.footer}>
+        {/* Enregistrer (hors ligne) — juste au-dessus de Démarrer */}
+        <Pressable style={styles.saveBtn} onPress={() => setConfirmVisible(true)}>
+          <MaterialCommunityIcons name="download-outline" size={20} color="#fff" />
+          <Text style={styles.saveText}>Enregistrer ce passage (hors ligne)</Text>
+        </Pressable>
+
         <Pressable style={styles.startBtn} onPress={() => router.push('/session')}>
           <MaterialCommunityIcons name="play" size={22} color="#fff" />
           <Text style={styles.startText}>Démarrer la séance</Text>
         </Pressable>
       </View>
+
+      <ConfirmDialog
+        title="Enregistrer hors ligne"
+        message="Ce passage sera téléchargé (audio + texte de chaque verset) pour être accessible sans connexion. Vous suivrez la progression sur l'écran des séances enregistrées."
+        visible={confirmVisible}
+        onTouchOutside={() => setConfirmVisible(false)}
+        positiveButton={{ title: 'Télécharger', onPress: handleConfirmSave }}
+        negativeButton={{ title: 'Annuler', onPress: () => setConfirmVisible(false) }}
+      />
     </SafeAreaView>
   )
 }
@@ -275,15 +268,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 18,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: secondary2,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: primary,
   },
-  saveText: { color: primary, fontWeight: '600' },
+  saveText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   footer: {
     padding: 16,
+    gap: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.06)',
     backgroundColor: secondary3,

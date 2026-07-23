@@ -5,12 +5,27 @@ import {
   useRef,
   useState,
 } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av'
 import { convertSelectVerset } from '@/helpers'
 import { sourates } from '@/constants/sorats.list'
-import { getDownloadedAudio, getDownloadedText } from '@/services/downloads'
+import {
+  getDownloadedAudio,
+  getDownloadedText,
+  downloadAudio,
+  downloadText,
+  removeDownloadedAudio,
+  removeDownloadedText,
+} from '@/services/downloads'
 import { getCachedAudio, cacheAudio, getCachedText, cacheText } from '@/services/cache'
+import {
+  saveSession,
+  deleteSession,
+  getDefaults,
+  saveDefaults,
+} from '@/services/teacherStorage'
+import { useAuth } from '@/context/AuthContext'
 import {
   createVoiceDetector,
   ensureMicPermission,
@@ -32,11 +47,14 @@ const TeacherContext = createContext(null)
 const PROMPT_DELAY_MS = 800
 
 export function TeacherProvider({ children }) {
+  const { user } = useAuth()
+  const userId = user?.id ?? 'anonymous'
+
   // ---- Configuration (renseignée par l'assistant en 3 étapes) ----
   const [surahIndex, setSurahIndex] = useState(0)
   const [startVerse, setStartVerse] = useState(1)
   const [endVerse, setEndVerse] = useState(7)
-  const [repetitions, setRepetitions] = useState(3)
+  const [repetitions, setRepetitionsState] = useState(3)
   const [reciter, setReciter] = useState('aymanswoaid')
   const [rate, setRate] = useState(1)
   const [settings, setSettings] = useState({
@@ -44,6 +62,15 @@ export function TeacherProvider({ children }) {
     silenceTimeoutMs: DEFAULT_SILENCE_TIMEOUT_MS,
     promptDelayMs: PROMPT_DELAY_MS,
   })
+
+  // ---- Suivi du téléchargement hors ligne des séances enregistrées ----
+  // downloadState = { [sessionId]: { versets: { [numVerset]: statut } } }
+  // statut ∈ 'pending' | 'downloading' | 'done' | 'error'  (même modèle
+  // que OfflineContext du mode libre).
+  const [downloadState, setDownloadState] = useState({})
+  const downloadStateRef = useRef({})
+  const [downloadingId, setDownloadingId] = useState(null)
+  const dlKey = `teacher_dl_${userId}`
 
   const surah = sourates[surahIndex]
   const surahNumber = surah?.numero ?? 1
@@ -75,19 +102,40 @@ export function TeacherProvider({ children }) {
   // sensibilité) soient pris en compte à chaque verset, pas seulement au
   // premier.
   const rateRef = useRef(1)
+  const repetitionsRef = useRef(3)
   const settingsRef = useRef({
     sensitivityDb: DEFAULT_SENSITIVITY_DB,
     silenceTimeoutMs: DEFAULT_SILENCE_TIMEOUT_MS,
     promptDelayMs: PROMPT_DELAY_MS,
   })
+  // Vrai quand la config vient d'un passage repris (loadConfig) : on
+  // n'écrase alors PAS les réglages par défaut au démarrage.
+  const resumedRef = useRef(false)
 
   // Le mode Professeur n'autorise que Ayman Swoaid comme réciteur (les
   // autres sont grisés dans l'UI) : pas de chargement du réciteur
   // persisté par le mode Révision libre, sous peine de désaligner la
   // présélection avec ce qui est affiché comme actif.
 
+  // Persiste les réglages courants comme valeurs par défaut d'une
+  // nouvelle séance (point 4 : l'utilisateur modifie ses défauts).
+  const persistDefaults = () => {
+    saveDefaults(userId, {
+      repetitions: repetitionsRef.current,
+      rate: rateRef.current,
+      sensitivityDb: settingsRef.current.sensitivityDb,
+    })
+  }
+
+  // Setter de répétitions : garde la ref à jour (persistance des défauts).
+  const setRepetitions = value => {
+    repetitionsRef.current = value
+    setRepetitionsState(value)
+  }
+
   // ---- Sélection depuis l'assistant ----
   const selectSurah = index => {
+    resumedRef.current = false // nouvelle séance : les réglages deviennent les défauts
     setSurahIndex(index)
     setStartVerse(1)
     setEndVerse(sourates[index]?.versets ?? 1)
@@ -95,11 +143,13 @@ export function TeacherProvider({ children }) {
 
   // Charge une configuration complète (reprise d'un passage sauvegardé).
   const loadConfig = config => {
+    resumedRef.current = true
     setSurahIndex(config.surahIndex)
     setStartVerse(config.startVerse)
     setEndVerse(config.endVerse)
     setReciter(config.reciter)
-    setRepetitions(config.repetitions)
+    repetitionsRef.current = config.repetitions
+    setRepetitionsState(config.repetitions)
     const nextRate = config.rate ?? 1
     rateRef.current = nextRate
     setRate(nextRate)
@@ -303,6 +353,10 @@ export function TeacherProvider({ children }) {
 
   // ---- Commandes exposées à l'UI ----
   async function start() {
+    // Nouvelle séance (non reprise) : les réglages utilisés deviennent
+    // les valeurs par défaut de la prochaine séance.
+    if (!resumedRef.current) persistDefaults()
+
     sessionRef.current += 1
     const session = sessionRef.current
     verseRef.current = startVerse
@@ -388,6 +442,136 @@ export function TeacherProvider({ children }) {
     detectorRef.current?.setSensitivity?.(db)
   }
 
+  // ============================================================
+  // Téléchargement hors ligne des séances enregistrées.
+  // Réutilise le service `downloads` et le même nommage de fichiers
+  // (`verset_<pos>` / `text_<pos>`) que le mode libre : la lecture du
+  // drill retombe automatiquement sur les fichiers locaux.
+  // ============================================================
+
+  const applyDownloadState = next => {
+    downloadStateRef.current = next
+    setDownloadState(next)
+    AsyncStorage.setItem(dlKey, JSON.stringify(next)).catch(() => {})
+  }
+
+  const updateVerseStatus = (sessionId, verseNumber, status) => {
+    const prev = downloadStateRef.current
+    applyDownloadState({
+      ...prev,
+      [sessionId]: {
+        versets: { ...(prev[sessionId]?.versets || {}), [verseNumber]: status },
+      },
+    })
+  }
+
+  // Télécharge UN verset (audio + texte) et met à jour son statut.
+  const downloadVerse = async (session, verseNumber) => {
+    const sNumber = sourates[session.surahIndex]?.numero ?? 1
+    const position = convertSelectVerset({ surahNumber: sNumber, selectedValue: verseNumber })
+    updateVerseStatus(session.id, verseNumber, 'downloading')
+
+    const urlAudio = `https://cdn.islamic.network/quran/audio/64/ar.${session.reciter}/${position}.mp3`
+    const urlText = `http://api.alquran.cloud/v1/ayah/${position}`
+    const audioUri = await downloadAudio(`verset_${position}`, urlAudio)
+    const textUri = await downloadText(`text_${position}`, urlText)
+
+    const ok = Boolean(audioUri && textUri)
+    updateVerseStatus(session.id, verseNumber, ok ? 'done' : 'error')
+    return ok
+  }
+
+  // Télécharge tous les versets d'une séance, séquentiellement. Une
+  // erreur sur un verset n'arrête pas les suivants.
+  const downloadSession = async session => {
+    setDownloadingId(session.id)
+    const versets = {}
+    for (let i = session.startVerse; i <= session.endVerse; i++) versets[i] = 'pending'
+    applyDownloadState({ ...downloadStateRef.current, [session.id]: { versets } })
+
+    for (let i = session.startVerse; i <= session.endVerse; i++) {
+      await downloadVerse(session, i)
+    }
+    setDownloadingId(null)
+  }
+
+  // Enregistre la config courante ET lance son téléchargement hors ligne.
+  // Renvoie l'entrée créée (avec son id) pour la navigation.
+  const saveSessionOffline = async () => {
+    // Les réglages utilisés pour ce passage deviennent aussi les défauts.
+    persistDefaults()
+    const config = {
+      surahIndex,
+      startVerse,
+      endVerse,
+      reciter,
+      repetitions: repetitionsRef.current,
+      rate: rateRef.current,
+      sensitivityDb: settingsRef.current.sensitivityDb,
+    }
+    const entry = await saveSession(userId, config)
+    if (entry) downloadSession(entry) // en tâche de fond
+    return entry
+  }
+
+  // Relance UNIQUEMENT le verset échoué d'une séance.
+  const retryVerse = async (session, verseNumber) => {
+    await downloadVerse(session, verseNumber)
+  }
+
+  // Supprime une séance : config + fichiers téléchargés + suivi.
+  const removeSessionOffline = async session => {
+    await deleteSession(userId, session.id)
+    const sNumber = sourates[session.surahIndex]?.numero ?? 1
+    for (let i = session.startVerse; i <= session.endVerse; i++) {
+      const position = convertSelectVerset({ surahNumber: sNumber, selectedValue: i })
+      await removeDownloadedAudio(`verset_${position}`)
+      await removeDownloadedText(`text_${position}`)
+    }
+    const { [session.id]: _omit, ...rest } = downloadStateRef.current
+    applyDownloadState(rest)
+  }
+
+  // Au montage / changement d'utilisateur : charge le suivi persisté (les
+  // téléchargements interrompus 'pending'/'downloading' → 'error' pour
+  // proposer un nouvel essai) et les réglages par défaut.
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(dlKey)
+        const stored = raw ? JSON.parse(raw) : {}
+        for (const sid of Object.keys(stored)) {
+          const versets = stored[sid]?.versets || {}
+          for (const v of Object.keys(versets)) {
+            if (versets[v] === 'pending' || versets[v] === 'downloading') versets[v] = 'error'
+          }
+        }
+        downloadStateRef.current = stored
+        setDownloadState(stored)
+      } catch (e) {
+        downloadStateRef.current = {}
+        setDownloadState({})
+      }
+
+      const defaults = await getDefaults(userId)
+      if (defaults) {
+        if (defaults.repetitions != null) {
+          repetitionsRef.current = defaults.repetitions
+          setRepetitionsState(defaults.repetitions)
+        }
+        if (defaults.rate != null) {
+          rateRef.current = defaults.rate
+          setRate(defaults.rate)
+        }
+        if (defaults.sensitivityDb != null) {
+          settingsRef.current = { ...settingsRef.current, sensitivityDb: defaults.sensitivityDb }
+          setSettings(s => ({ ...s, sensitivityDb: defaults.sensitivityDb }))
+        }
+      }
+    }
+    load()
+  }, [userId])
+
   // Nettoyage au démontage du provider.
   useEffect(() => {
     return () => {
@@ -438,6 +622,12 @@ export function TeacherProvider({ children }) {
         resume,
         replayVerse,
         skipVerse,
+        // hors ligne (séances enregistrées)
+        downloadState,
+        downloadingId,
+        saveSessionOffline,
+        retryVerse,
+        removeSessionOffline,
       }}
     >
       {children}
