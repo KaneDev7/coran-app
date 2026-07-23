@@ -11,6 +11,11 @@ import { PhaseBanner } from '@/components/teacher/PhaseBanner'
 import { MicMeter } from '@/components/teacher/MicMeter'
 import { SessionControls } from '@/components/teacher/SessionControls'
 import { InputRange } from '@/components/ui/InputRange'
+import {
+  sensitivityLabel,
+  MIN_SENSITIVITY_DB,
+  MAX_SENSITIVITY_DB,
+} from '@/services/voiceDetector'
 import { useTeacher } from '@/context/TeacherContext'
 
 export default function TeacherSession() {
@@ -21,6 +26,8 @@ export default function TeacherSession() {
     repetitions,
     rate,
     setRate,
+    settings,
+    setSensitivity,
     phase,
     currentVerse,
     currentRepetition,
@@ -133,12 +140,33 @@ export default function TeacherSession() {
         />
       </View>
 
-      {/* Contrôle de vitesse */}
+      {/* Contrôle de vitesse (en direct) */}
       <View style={styles.rateControl}>
         <MaterialCommunityIcons name="speedometer-slow" size={18} color={secondary} />
         <InputRange value={rate} setValue={setRate} min={0.75} max={1.25} />
         <MaterialCommunityIcons name="speedometer" size={18} color={secondary} />
         <Text style={styles.rateValue}>{rate.toFixed(2)}×</Text>
+      </View>
+
+      {/* Contrôle de sensibilité du micro (en direct) */}
+      <View style={styles.sensitivityControl}>
+        <View style={styles.sensitivityRow}>
+          <MaterialCommunityIcons name="volume-low" size={18} color={secondary} />
+          <InputRange
+            value={settings.sensitivityDb}
+            setValue={setSensitivity}
+            min={MIN_SENSITIVITY_DB}
+            max={MAX_SENSITIVITY_DB}
+          />
+          <MaterialCommunityIcons name="volume-high" size={18} color={secondary} />
+        </View>
+        <Text style={styles.sensitivityLabel}>
+          🎙️ {sensitivityLabel(settings.sensitivityDb)}
+        </Text>
+        <Text style={styles.sensitivityHint}>
+          Trop bruyant ? Glissez vers la droite pour que le micro ignore les
+          bruits de fond.
+        </Text>
       </View>
 
       {/* Contrôles manuels */}
@@ -234,12 +262,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
   },
-  micZone: { alignItems: 'center', marginVertical: 16 },
+  micZone: { alignItems: 'center', marginVertical: 12 },
   rateControl: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginVertical: 12,
+    marginTop: 12,
+    marginBottom: 8,
     marginHorizontal: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -251,6 +280,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: primary,
+  },
+  sensitivityControl: {
+    marginBottom: 8,
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
+  sensitivityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sensitivityLabel: {
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: primary,
+  },
+  sensitivityHint: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: secondary,
+    lineHeight: 15,
   },
   controls: { marginBottom: 8 },
 })

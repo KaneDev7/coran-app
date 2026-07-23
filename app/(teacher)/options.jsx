@@ -18,6 +18,11 @@ import { StepHeader } from '@/components/teacher/StepHeader'
 import { useTeacher } from '@/context/TeacherContext'
 import { useAuth } from '@/context/AuthContext'
 import { saveSession } from '@/services/teacherStorage'
+import {
+  sensitivityLabel,
+  MIN_SENSITIVITY_DB,
+  MAX_SENSITIVITY_DB,
+} from '@/services/voiceDetector'
 
 const MIN_REP = 1
 const MAX_REP = 20
@@ -34,6 +39,8 @@ export default function TeacherOptionsStep() {
     setReciter,
     rate,
     setRate,
+    settings,
+    setSensitivity,
   } = useTeacher()
   const { user } = useAuth()
 
@@ -50,6 +57,7 @@ export default function TeacherOptionsStep() {
       reciter,
       repetitions,
       rate,
+      sensitivityDb: settings.sensitivityDb,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
@@ -92,6 +100,9 @@ export default function TeacherOptionsStep() {
         {/* Réciteur */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Réciteur</Text>
+          <Text style={styles.cardHint}>
+            La voix qui récite le verset avant que vous ne le répétiez
+          </Text>
           <FlatList
             data={reciteurs}
             keyExtractor={item => item.title}
@@ -122,12 +133,40 @@ export default function TeacherOptionsStep() {
         {/* Vitesse */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Vitesse de récitation</Text>
+          <Text style={styles.cardHint}>
+            Ralentissez pour bien mémoriser, accélérez quand vous maîtrisez.
+            Ajustable aussi en direct pendant la séance.
+          </Text>
           <View style={styles.rateRow}>
             <MaterialCommunityIcons name="speedometer-slow" size={20} color={secondary} />
             <InputRange value={rate} setValue={setRate} min={0.75} max={1.25} />
             <MaterialCommunityIcons name="speedometer" size={20} color={secondary} />
           </View>
           <Text style={styles.rateValue}>{rate.toFixed(2)}×</Text>
+        </View>
+
+        {/* Sensibilité du micro */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Sensibilité du micro</Text>
+          <Text style={styles.cardHint}>
+            Détermine à partir de quel volume le micro considère que vous
+            récitez. Dans un endroit bruyant, glissez vers la droite : le micro
+            devient moins sensible, ignore les bruits de fond et détecte mieux
+            la fin de votre récitation. S'il « reste bloqué » en écoute alors
+            que vous avez fini, c'est qu'il est trop sensible. Réglable aussi
+            en direct pendant la séance.
+          </Text>
+          <View style={styles.rateRow}>
+            <MaterialCommunityIcons name="volume-low" size={20} color={secondary} />
+            <InputRange
+              value={settings.sensitivityDb}
+              setValue={setSensitivity}
+              min={MIN_SENSITIVITY_DB}
+              max={MAX_SENSITIVITY_DB}
+            />
+            <MaterialCommunityIcons name="volume-high" size={20} color={secondary} />
+          </View>
+          <Text style={styles.rateValue}>{sensitivityLabel(settings.sensitivityDb)}</Text>
         </View>
 
         <Pressable style={styles.saveBtn} onPress={handleSave}>

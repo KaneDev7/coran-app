@@ -90,6 +90,9 @@ export function TeacherProvider({ children }) {
     setReciter(config.reciter)
     setRepetitions(config.repetitions)
     setRate(config.rate ?? 1)
+    if (config.sensitivityDb != null) {
+      setSettings(s => ({ ...s, sensitivityDb: config.sensitivityDb }))
+    }
   }
 
   // ---- Modes audio (bascule lecture <-> enregistrement) ----
@@ -353,6 +356,15 @@ export function TeacherProvider({ children }) {
     await reciteCurrentVerse(session)
   }
 
+  // Règle la sensibilité du micro. Met à jour la config (prise en
+  // compte aux prochaines écoutes) ET, si une écoute est en cours, le
+  // détecteur en direct — pour que l'ajustement soit immédiat quand le
+  // micro « reste bloqué » à cause du bruit de fond.
+  const setSensitivity = db => {
+    setSettings(s => ({ ...s, sensitivityDb: db }))
+    detectorRef.current?.setSensitivity?.(db)
+  }
+
   // Nettoyage au démontage du provider.
   useEffect(() => {
     return () => {
@@ -385,6 +397,7 @@ export function TeacherProvider({ children }) {
         setReciter,
         setRate,
         setSettings,
+        setSensitivity,
         // runtime
         phase,
         currentVerse,

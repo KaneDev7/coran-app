@@ -19,6 +19,14 @@ import { Audio } from 'expo-av'
 // Seuil de voix en dBFS. Le metering va de ~-160 (silence) à 0 (max).
 // Au-dessus de ce seuil = on considère qu'il y a de la voix.
 export const DEFAULT_SENSITIVITY_DB = -35
+// Bornes du réglage de sensibilité, exposées à l'UI (slider).
+//   - proche de MIN (-50) : TRÈS sensible → capte les sons faibles,
+//     idéal en endroit calme, mais le bruit de fond peut être pris
+//     pour de la voix ;
+//   - proche de MAX (-20) : PEU sensible → il faut parler plus fort,
+//     idéal en endroit bruyant car le bruit de fond est ignoré.
+export const MIN_SENSITIVITY_DB = -50
+export const MAX_SENSITIVITY_DB = -20
 // Durée de silence continu qui marque la fin d'une répétition.
 export const DEFAULT_SILENCE_TIMEOUT_MS = 1500
 // Nombre de frames consécutives au-dessus du seuil pour valider le
@@ -31,6 +39,16 @@ const METER_INTERVAL_MS = 100
 export function normalizeLevel(db) {
   if (db == null) return 0
   return Math.max(0, Math.min(1, (db + 60) / 60))
+}
+
+// Libellé humain pour une valeur de seuil : aide l'utilisateur à
+// comprendre le réglage sans lire des dBFS.
+export function sensitivityLabel(db) {
+  if (db <= -44) return 'Très sensible · endroit calme'
+  if (db <= -37) return 'Sensible · endroit calme'
+  if (db <= -31) return 'Équilibré'
+  if (db <= -25) return 'Peu sensible · endroit bruyant'
+  return 'Très peu sensible · endroit bruyant'
 }
 
 // Demande (ou vérifie) la permission micro. Renvoie un booléen.
@@ -57,6 +75,11 @@ export function createVoiceDetector({
   let onsetCount = 0
   let silenceStart = null
   let cbs = {}
+  // Paramètres mutables : ajustables EN DIRECT pendant l'écoute via
+  // setSensitivity / setSilenceTimeout (le seuil s'applique à la frame
+  // suivante, sans recréer le détecteur ni couper le micro).
+  let currentSensitivityDb = sensitivityDb
+  let currentSilenceTimeoutMs = silenceTimeoutMs
 
   function handleStatus(status) {
     if (stopped || !status || !status.isRecording) return
@@ -64,7 +87,7 @@ export function createVoiceDetector({
     const db = status.metering ?? -160
     cbs.onLevel?.(normalizeLevel(db))
 
-    const isLoud = db > sensitivityDb
+    const isLoud = db > currentSensitivityDb
 
     if (!hasSpoken) {
       // Attente de l'onset de la voix.
@@ -87,7 +110,7 @@ export function createVoiceDetector({
     } else {
       if (silenceStart == null) {
         silenceStart = Date.now()
-      } else if (Date.now() - silenceStart >= silenceTimeoutMs) {
+      } else if (Date.now() - silenceStart >= currentSilenceTimeoutMs) {
         const done = cbs.onSpeechEnd
         // Stop d'abord pour libérer le micro, puis notifie.
         stop().then(() => done?.())
@@ -126,5 +149,13 @@ export function createVoiceDetector({
     }
   }
 
-  return { start, stop }
+  // Ajustements en direct (pendant l'écoute).
+  function setSensitivity(db) {
+    currentSensitivityDb = db
+  }
+  function setSilenceTimeout(ms) {
+    currentSilenceTimeoutMs = ms
+  }
+
+  return { start, stop, setSensitivity, setSilenceTimeout }
 }
