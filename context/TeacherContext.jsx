@@ -69,6 +69,17 @@ export function TeacherProvider({ children }) {
   const verseRef = useRef(1)
   const repRef = useRef(1)
   const loopRef = useRef(0)
+  // Valeurs ajustables EN DIRECT pendant la séance. La chaîne asynchrone
+  // du drill s'exécute sur des closures figées au démarrage : on lit donc
+  // ces valeurs via des refs pour que les réglages en direct (vitesse,
+  // sensibilité) soient pris en compte à chaque verset, pas seulement au
+  // premier.
+  const rateRef = useRef(1)
+  const settingsRef = useRef({
+    sensitivityDb: DEFAULT_SENSITIVITY_DB,
+    silenceTimeoutMs: DEFAULT_SILENCE_TIMEOUT_MS,
+    promptDelayMs: PROMPT_DELAY_MS,
+  })
 
   // Le mode Professeur n'autorise que Ayman Swoaid comme réciteur (les
   // autres sont grisés dans l'UI) : pas de chargement du réciteur
@@ -89,8 +100,11 @@ export function TeacherProvider({ children }) {
     setEndVerse(config.endVerse)
     setReciter(config.reciter)
     setRepetitions(config.repetitions)
-    setRate(config.rate ?? 1)
+    const nextRate = config.rate ?? 1
+    rateRef.current = nextRate
+    setRate(nextRate)
     if (config.sensitivityDb != null) {
+      settingsRef.current = { ...settingsRef.current, sensitivityDb: config.sensitivityDb }
       setSettings(s => ({ ...s, sensitivityDb: config.sensitivityDb }))
     }
   }
@@ -193,7 +207,7 @@ export function TeacherProvider({ children }) {
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri },
-        { shouldPlay: true, rate, shouldCorrectPitch: true, volume: 1 },
+        { shouldPlay: true, rate: rateRef.current, shouldCorrectPitch: true, volume: 1 },
         status => {
           if (session !== sessionRef.current) return
           if (status.didJustFinish) afterRecite(session)
@@ -217,7 +231,7 @@ export function TeacherProvider({ children }) {
   async function afterRecite(session) {
     if (session !== sessionRef.current) return
     setPhase('prompt')
-    await wait(settings.promptDelayMs)
+    await wait(settingsRef.current.promptDelayMs)
     if (session !== sessionRef.current) return
     await beginListening(session)
   }
@@ -232,8 +246,8 @@ export function TeacherProvider({ children }) {
     if (session !== sessionRef.current) return
 
     const detector = createVoiceDetector({
-      sensitivityDb: settings.sensitivityDb,
-      silenceTimeoutMs: settings.silenceTimeoutMs,
+      sensitivityDb: settingsRef.current.sensitivityDb,
+      silenceTimeoutMs: settingsRef.current.silenceTimeoutMs,
     })
     detectorRef.current = detector
 
@@ -356,11 +370,20 @@ export function TeacherProvider({ children }) {
     await reciteCurrentVerse(session)
   }
 
-  // Règle la sensibilité du micro. Met à jour la config (prise en
-  // compte aux prochaines écoutes) ET, si une écoute est en cours, le
-  // détecteur en direct — pour que l'ajustement soit immédiat quand le
-  // micro « reste bloqué » à cause du bruit de fond.
+  // Règle la vitesse. Met à jour l'UI + la ref (lue au prochain verset)
+  // ET applique en direct à la récitation en cours.
+  const applyRate = value => {
+    rateRef.current = value
+    setRate(value)
+    soundRef.current?.setRateAsync?.(value, true).catch(() => {})
+  }
+
+  // Règle la sensibilité du micro. Met à jour l'UI + la ref (lue à la
+  // prochaine écoute) ET, si une écoute est en cours, le détecteur en
+  // direct — pour que l'ajustement soit immédiat quand le micro « reste
+  // bloqué » à cause du bruit de fond.
   const setSensitivity = db => {
+    settingsRef.current = { ...settingsRef.current, sensitivityDb: db }
     setSettings(s => ({ ...s, sensitivityDb: db }))
     detectorRef.current?.setSensitivity?.(db)
   }
@@ -395,7 +418,7 @@ export function TeacherProvider({ children }) {
         setEndVerse,
         setRepetitions,
         setReciter,
-        setRate,
+        setRate: applyRate,
         setSettings,
         setSensitivity,
         // runtime

@@ -15,10 +15,10 @@ export function ModeCard({ icon, title, subtitle, colors, onPress, badge, disabl
       disabled={disabled}
     >
       <LinearGradient
-        colors={disabled ? ['#ccc', '#999'] : colors}
+        colors={colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.card, disabled && styles.cardDisabled]}
+        style={styles.card}
       >
         <View style={styles.iconCircle}>
           <MaterialCommunityIcons name={icon} size={34} color="#fff" />
@@ -50,7 +50,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
   },
-  wrapperDisabled: { opacity: 0.6 },
+  // Léger voile pour signaler « indisponible » sans nuire au contraste
+  // du texte blanc (la pastille « À venir » porte l'info principale).
+  wrapperDisabled: { opacity: 0.9 },
   pressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   card: {
     flexDirection: 'row',
@@ -59,7 +61,6 @@ const styles = StyleSheet.create({
     padding: 22,
     gap: 16,
   },
-  cardDisabled: { opacity: 0.8 },
   iconCircle: {
     width: 64,
     height: 64,
