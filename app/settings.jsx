@@ -8,6 +8,7 @@ import {
   Linking,
   Share,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import {
   MaterialCommunityIcons,
   MaterialIcons,
@@ -50,80 +51,95 @@ const LINKS = [
   },
 ]
 
+// Écran Paramètres — hors des onglets, au même niveau que l'accueil.
 export default function Settings() {
   const { user, logout } = useAuth()
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false)
 
+  const goHome = () =>
+    router.canGoBack() ? router.back() : router.replace('/')
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* ---- Profil ---- */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Feather name="user" size={30} color="#fff" />
-        </View>
-        <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>{user?.fullName}</Text>
-          <Text style={styles.profileEmail}>{user?.email}</Text>
-          <View style={styles.planBadge}>
-            <MaterialCommunityIcons
-              name={user?.premium ? 'crown-outline' : 'account-outline'}
-              size={13}
-              color={secondary}
-            />
-            <Text style={styles.planBadgeText}>
-              {user?.premium ? 'Compte Premium' : 'Compte gratuit'}
-            </Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* En-tête : retour à l'accueil + titre */}
+      <View style={styles.header}>
+        <Pressable onPress={goHome} hitSlop={10} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color={primary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Paramètres</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* ---- Profil ---- */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatar}>
+            <Feather name="user" size={30} color="#fff" />
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{user?.fullName}</Text>
+            <Text style={styles.profileEmail}>{user?.email}</Text>
+            <View style={styles.planBadge}>
+              <MaterialCommunityIcons
+                name={user?.premium ? 'crown-outline' : 'account-outline'}
+                size={13}
+                color={secondary}
+              />
+              <Text style={styles.planBadgeText}>
+                {user?.premium ? 'Compte Premium' : 'Compte gratuit'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* ---- Accueil / changer de mode ---- */}
-      <Pressable style={styles.homeCard} onPress={() => router.push('/')}>
-        <MaterialCommunityIcons name="home-variant-outline" size={22} color={primary} />
-        <Text style={styles.homeCardText}>Accueil · changer de mode</Text>
-        <MaterialIcons name="chevron-right" size={22} color={secondary} />
-      </Pressable>
+        {/* ---- Accueil / changer de mode ---- */}
+        <Pressable style={styles.homeCard} onPress={() => router.replace('/')}>
+          <MaterialCommunityIcons name="home-variant-outline" size={22} color={primary} />
+          <Text style={styles.homeCardText}>Accueil · changer de mode</Text>
+          <MaterialIcons name="chevron-right" size={22} color={secondary} />
+        </Pressable>
 
-      {/* ---- Premium (préparation) ---- */}
-      <View style={styles.premiumCard}>
-        <View style={styles.premiumHeader}>
-          <MaterialCommunityIcons name="crown-outline" size={24} color="#b8860b" />
-          <Text style={styles.premiumTitle}>Passer à Premium</Text>
+        {/* ---- Premium (préparation) ---- */}
+        <View style={styles.premiumCard}>
+          <View style={styles.premiumHeader}>
+            <MaterialCommunityIcons name="crown-outline" size={24} color="#b8860b" />
+            <Text style={styles.premiumTitle}>Passer à Premium</Text>
+          </View>
+          <Text style={styles.premiumDesc}>
+            Téléchargements hors ligne illimités et nouvelles fonctionnalités à
+            venir.
+          </Text>
+          <View style={styles.premiumButton}>
+            <Text style={styles.premiumButtonText}>Bientôt disponible</Text>
+          </View>
         </View>
-        <Text style={styles.premiumDesc}>
-          Téléchargements hors ligne illimités et nouvelles fonctionnalités à
-          venir.
-        </Text>
-        <View style={styles.premiumButton}>
-          <Text style={styles.premiumButtonText}>Bientôt disponible</Text>
+
+        {/* ---- Liens ---- */}
+        <View style={styles.linksCard}>
+          {LINKS.map((link, i) => (
+            <Pressable
+              key={link.label}
+              style={[styles.linkRow, i < LINKS.length - 1 && styles.linkRowBorder]}
+              onPress={link.action}
+            >
+              <MaterialCommunityIcons name={link.icon} size={22} color={primary} />
+              <Text style={styles.linkLabel}>{link.label}</Text>
+              <MaterialIcons name="chevron-right" size={22} color={secondary} />
+            </Pressable>
+          ))}
         </View>
-      </View>
 
-      {/* ---- Liens ---- */}
-      <View style={styles.linksCard}>
-        {LINKS.map((link, i) => (
-          <Pressable
-            key={link.label}
-            style={[styles.linkRow, i < LINKS.length - 1 && styles.linkRowBorder]}
-            onPress={link.action}
-          >
-            <MaterialCommunityIcons name={link.icon} size={22} color={primary} />
-            <Text style={styles.linkLabel}>{link.label}</Text>
-            <MaterialIcons name="chevron-right" size={22} color={secondary} />
-          </Pressable>
-        ))}
-      </View>
+        {/* ---- Déconnexion ---- */}
+        <Pressable
+          style={styles.logoutButton}
+          onPress={() => setLogoutDialogVisible(true)}
+        >
+          <MaterialIcons name="logout" size={20} color="#dc3545" />
+          <Text style={styles.logoutText}>Se déconnecter</Text>
+        </Pressable>
 
-      {/* ---- Déconnexion ---- */}
-      <Pressable
-        style={styles.logoutButton}
-        onPress={() => setLogoutDialogVisible(true)}
-      >
-        <MaterialIcons name="logout" size={20} color="#dc3545" />
-        <Text style={styles.logoutText}>Se déconnecter</Text>
-      </Pressable>
-
-      <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version 1.0.0</Text>
+      </ScrollView>
 
       <ConfirmDialog
         title="Déconnexion"
@@ -144,7 +160,7 @@ export default function Settings() {
           onPress: () => setLogoutDialogVisible(false),
         }}
       />
-    </ScrollView>
+    </SafeAreaView>
   )
 }
 
@@ -153,6 +169,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: secondary3,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: primary },
   content: {
     padding: 16,
     paddingBottom: 40,

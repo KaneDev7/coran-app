@@ -18,6 +18,8 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         {/* Mode Professeur */}
         <Stack.Screen name="(teacher)" />
+        {/* Paramètres (hors onglets, même niveau que l'accueil) */}
+        <Stack.Screen name="settings" />
       </Stack.Protected>
       <Stack.Protected guard={!user}>
         <Stack.Screen name="(auth)" />

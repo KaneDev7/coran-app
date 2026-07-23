@@ -6,7 +6,6 @@ import { StatusBar } from 'expo-status-bar';
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Feather from '@expo/vector-icons/Feather';
-import { MaterialIcons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { secondary } from '@/style/variables';
 
@@ -72,17 +71,6 @@ export default function TabsLayout() {
                   headerShadowVisible: false,
                   title: 'Réciteurs',
                   tabBarIcon: ({ color, focused }) => <FontAwesome5 name="headset" size={20} style={{ opacity: focused ? 1 : .4 }} color={secondary} />,
-                }}
-              />
-
-              {/* Paramètres : accessible via l'icône ⚙️ de l'accueil, mais
-                  retiré de la barre d'onglets (href: null) → 4 onglets. */}
-              <Tabs.Screen
-                name="settings"
-                options={{
-                  href: null,
-                  headerShadowVisible: false,
-                  title: 'Paramètres',
                 }}
               />
 
