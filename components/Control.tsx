@@ -65,22 +65,22 @@ export default function Control() {
   const handleNext = async () => {
     // En mode hors ligne, le changement de sourate est verrouillé.
     if (isOfflineMode) return
-    const index = sourates.length - 1 > currentIndex ? parseFloat(currentIndex) + 1 : 0
-    router.push({ pathname: `/player/${index}` })
+    const index = sourates.length - 1 > currentIndex ? currentIndex + 1 : 0
+    router.push({ pathname: '/player/[index]', params: { index } })
   }
 
   const handlePrev = async () => {
     if (isOfflineMode) return
-    const index = currentIndex > 0 ? parseFloat(currentIndex) - 1 : sourates.length - 1
-    router.push({ pathname: `/player/${index}` })
+    const index = currentIndex > 0 ? currentIndex - 1 : sourates.length - 1
+    router.push({ pathname: '/player/[index]', params: { index } })
   }
 
   return (
     <View
       style={{
-        pointerEvents: isLoading && isPlaying ? "none" : 'auto',
-        opacity: isLoading && isPlaying ? "0.5" : '1',
-        ...style.controlConatiner
+        pointerEvents: isLoading && isPlaying ? 'none' : 'auto',
+        opacity: isLoading && isPlaying ? 0.5 : 1,
+        ...style.controlConatiner,
       }} >
       <Pressable
         style={[style.sideButton, isOfflineMode && style.sideButtonLocked]}

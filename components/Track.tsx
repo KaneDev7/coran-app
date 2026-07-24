@@ -1,6 +1,4 @@
-import React, { useContext } from 'react'
-import { StyleSheet, View, Text } from 'react-native'
-import { windowWidth } from '../style'
+import { StyleSheet, View, Text, type ViewStyle, type DimensionValue } from 'react-native'
 import { usePlayer } from '@/context/PlayerContext'
 import { primary, secondary } from '../style/variables'
 import { formatTime } from "../helpers"
@@ -11,8 +9,8 @@ export default function Track() {
   // Progression en pourcentage : indépendante de la largeur réelle du conteneur.
   const percent = duration > 0 ? Math.min((timeUpdate / duration) * 100, 100) : 0
 
-  const progressStyle = {
-    width: `${percent}%`,
+  const progressStyle: ViewStyle = {
+    width: `${percent}%` as DimensionValue,
     height: 6,
     backgroundColor: primary,
     borderRadius: 50,

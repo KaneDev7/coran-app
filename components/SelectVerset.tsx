@@ -1,12 +1,16 @@
-import { Dropdown } from 'react-native-element-dropdown';
-import React, { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, StyleSheet, Text } from 'react-native'
 import { useLibrary } from '@/context/LibraryContext'
 import { usePlayer } from '@/context/PlayerContext'
 import { useOffline } from '@/context/OfflineContext'
 import DropDownPicker from 'react-native-dropdown-picker';
 import { windowWidth } from '../style';
-import { ConfirmDialog } from 'react-native-simple-dialogs';
+import { ConfirmDialog } from '@/components/ui/dialogs';
+
+interface VerseItem {
+  label: string
+  value: number
+}
 
 
 const DropdownComponent = () => {
@@ -26,13 +30,13 @@ const DropdownComponent = () => {
     // En mode hors ligne, la sélection de versets est verrouillée.
     const isLocked = isPlaying || isPause || isOfflineMode
 
-    const [versets, setVersets] = useState([])
+    const [versets, setVersets] = useState<VerseItem[]>([])
     const [openSelectStartVerset, setOpenSelectStartVerset] = useState(false);
     const [openSelectEndtVerset, setOpenSelectEndtVerset] = useState(false);
     const [dialogVisible, setDialogVisible] = useState(false)
 
     useEffect(() => {
-        const versetsArray = []
+        const versetsArray: VerseItem[] = []
         for (let index = 1; index <= lastVersetOfSelectedSurah; index++) {
             versetsArray.push({ label: `v-${index}`, value: index })
         }
@@ -49,20 +53,21 @@ const DropdownComponent = () => {
                 open={openSelectStartVerset}
                 setOpen={setOpenSelectStartVerset}
                 items={versets}
+                value={null}
+                setValue={() => {}}
                 disabled={isLocked}
-                placeholder={currentSlide}
-                // value={currentSlide}
-                disabledStyle={true}
+                placeholder={String(currentSlide)}
                 maxHeight={300}
                 containerStyle={{ width: windowWidth / 4, opacity: isLocked ? .3 : 1 }}
                 textStyle={{ fontSize: 17 }}
                 onSelectItem={item => {
-                    if (item.value > selectEndVerset) {
-                        setSelectSartVerset(item.value)
+                    const value = Number(item.value)
+                    if (value > selectEndVerset) {
+                        setSelectSartVerset(value)
                         return setDialogVisible(true)
                     }
-                    setSelectSartVerset(item.value)
-                    setCurrentSlide(item.value)
+                    setSelectSartVerset(value)
+                    setCurrentSlide(value)
                 }}
             />
             </View>
@@ -72,18 +77,20 @@ const DropdownComponent = () => {
                 open={openSelectEndtVerset}
                 setOpen={setOpenSelectEndtVerset}
                 items={versets}
+                value={null}
+                setValue={() => {}}
                 disabled={isLocked}
-                placeholder={selectEndVerset}
+                placeholder={String(selectEndVerset)}
                 textStyle={{ fontSize: 17 }}
                 maxHeight={300}
-                // value={selectEndVerset}
                 containerStyle={{ width: windowWidth / 4, opacity: isLocked ? .3 : 1 }}
                 onSelectItem={item => {
-                    if (item.value < selectSartVerset) {
+                    const value = Number(item.value)
+                    if (value < selectSartVerset) {
                         setSelectEndVerset(selectSartVerset)
                         return setDialogVisible(true)
                     }
-                    setSelectEndVerset(item.value)
+                    setSelectEndVerset(value)
                 }}
             />
             </View>

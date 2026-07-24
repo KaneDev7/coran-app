@@ -6,8 +6,7 @@ import { useOffline } from '@/context/OfflineContext'
 import { primary, secondary, secondary2 } from '../style/variables'
 import { Link, router } from 'expo-router'
 import { Entypo, MaterialIcons } from '@expo/vector-icons'
-import { windowWidth } from '../style'
-import { ConfirmDialog } from 'react-native-simple-dialogs'
+import { ConfirmDialog } from '@/components/ui/dialogs'
 
 export default function Rciter () {
   const { reciter } = useReciter()
@@ -36,7 +35,7 @@ export default function Rciter () {
     // Les garde-fous (espace disque...) sont vérifiés par onSaveLeason.
     const result = await onSaveLeason()
     if (!result.success) {
-      setSaveError(result.error)
+      setSaveError(result.error ?? 'Téléchargement impossible')
       return
     }
     router.push({ pathname: '/lessons' })
