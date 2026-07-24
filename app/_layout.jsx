@@ -13,7 +13,6 @@ SplashScreen.preventAutoHideAsync()
 // sinon -> écrans d'authentification.
 function RootNavigator() {
   const { user, isAuthLoading } = useAuth()
-  console.log("_______user", user)
 
   // Dès que la session est résolue (succès ou échec), on masque le splash.
   useEffect(() => {
