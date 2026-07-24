@@ -62,7 +62,15 @@ const getRefreshToken = () => secureStorage.get(REFRESH_TOKEN_KEY)
 
 // ---------- Appels HTTP ----------
 
-async function request(path, { method = 'POST', body, token } = {}) {
+// Timeout par défaut d'une requête. `fetch` de React Native n'a PAS de
+// timeout natif : sur un backend injoignable, la promesse peut rester en
+// suspens très longtemps (→ splash bloqué au démarrage). On borne donc
+// chaque appel via AbortController.
+const DEFAULT_TIMEOUT_MS = 10000
+
+async function request(path, { method = 'POST', body, token, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const response = await fetch(`${API_URL}${path}`, {
       method,
@@ -71,6 +79,7 @@ async function request(path, { method = 'POST', body, token } = {}) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     })
 
     const data = await response.json().catch(() => ({}))
@@ -87,11 +96,14 @@ async function request(path, { method = 'POST', body, token } = {}) {
     }
     return { success: true, status: response.status, ...data }
   } catch (e) {
+    // Abort (timeout) ou erreur réseau : serveur injoignable.
     return {
       success: false,
       status: 0,
       error: 'Serveur injoignable, vérifiez votre connexion',
     }
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -103,7 +115,7 @@ export async function authenticatedRequest(path, options = {}) {
   let result = await request(path, { ...options, token })
 
   if (result.status === 401) {
-    const refreshed = await tryRefreshSession()
+    const refreshed = await tryRefreshSession(options.timeoutMs)
     if (!refreshed) {
       await clearSession()
       return { ...result, sessionExpired: true }
@@ -115,11 +127,11 @@ export async function authenticatedRequest(path, options = {}) {
   return result
 }
 
-async function tryRefreshSession() {
+async function tryRefreshSession(timeoutMs) {
   const refreshToken = await getRefreshToken()
   if (!refreshToken) return false
 
-  const result = await request('/auth/refresh', { body: { refreshToken } })
+  const result = await request('/auth/refresh', { body: { refreshToken }, timeoutMs })
   if (!result.success) return false
 
   await storeSession(result.accessToken, result.refreshToken)
@@ -161,27 +173,28 @@ export async function resetPassword(email, code, newPassword) {
 }
 
 // Recharge la session au démarrage : profil via l'access token stocké,
-// avec rafraîchissement automatique si expiré. Timeout après 5s pour éviter le blocage.
+// avec rafraîchissement automatique si expiré. Chaque requête est bornée
+// par un timeout court ici pour ne jamais bloquer le splash.
 export async function fetchCurrentUser() {
   const token = await getAccessToken()
   if (!token) return null
 
   try {
-    // Timeout de 5 secondes pour éviter le blocage indéfini
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    )
-
-    const result = await Promise.race([
-      authenticatedRequest('/users/me', { method: 'GET' }),
-      timeoutPromise,
-    ])
-
+    const result = await authenticatedRequest('/users/me', {
+      method: 'GET',
+      timeoutMs: 6000,
+    })
     return result.success ? result : null
   } catch (error) {
-    // En cas d'erreur ou timeout, on retourne null sans bloquer
     return null
   }
+}
+
+// Efface la session stockée en LOCAL uniquement (Keychain/Keystore +
+// AsyncStorage), SANS appel réseau : utilisé au démarrage quand le
+// backend est injoignable, pour déconnecter sans risquer de bloquer.
+export async function clearStoredSession() {
+  await clearSession()
 }
 
 export async function signOut() {

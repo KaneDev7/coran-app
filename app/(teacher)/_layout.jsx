@@ -11,6 +11,7 @@ export default function TeacherLayout() {
         <Stack.Screen name="teacher" />
         <Stack.Screen name="new" />
         <Stack.Screen name="saved" />
+        <Stack.Screen name="edit" />
         <Stack.Screen name="options" />
         <Stack.Screen name="session" />
       </Stack>

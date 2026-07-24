@@ -47,14 +47,6 @@ export default function Home() {
           colors={['#2e7d32', '#1b5e20']}
           onPress={() => router.push('/teacher')}
         />
-        <ModeCard
-          icon="brain"
-          title="Apprendre avec l'IA"
-          subtitle="Vous récitez, l'IA écoute et détecte les erreurs de prononciation."
-          colors={['#321e8a', '#2d1e64']}
-          badge="À venir"
-          disabled
-        />
       </View>
 
       <Text style={styles.footer}>Qu'Allah facilite votre apprentissage</Text>
