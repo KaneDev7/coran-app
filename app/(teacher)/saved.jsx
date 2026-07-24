@@ -46,7 +46,7 @@ function VerseChip({ verseNumber, status, onRetry }) {
   )
 }
 
-function SessionCard({ item, onResume, onDelete }) {
+function SessionCard({ item, onResume, onDelete, onEdit }) {
   const { downloadState, retryVerse } = useTeacher()
 
   const versets = downloadState[item.id]?.versets || null
@@ -75,9 +75,14 @@ function SessionCard({ item, onResume, onDelete }) {
             )}
           </View>
         </Pressable>
-        <Pressable onPress={() => onDelete(item)} hitSlop={10}>
-          <Feather name="trash-2" size={18} color="#dc3545" />
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable onPress={() => onEdit(item)} hitSlop={8} style={styles.actionBtn}>
+            <Feather name="edit-2" size={17} color={primary} />
+          </Pressable>
+          <Pressable onPress={() => onDelete(item)} hitSlop={8} style={styles.actionBtn}>
+            <Feather name="trash-2" size={17} color="#dc3545" />
+          </Pressable>
+        </View>
       </View>
 
       {showProgress && (
@@ -132,6 +137,10 @@ export default function TeacherSavedSessions() {
     router.push('/session')
   }
 
+  const handleEdit = session => {
+    router.push({ pathname: '/edit', params: { id: String(session.id) } })
+  }
+
   const confirmDelete = async () => {
     const session = toDelete
     setToDelete(null)
@@ -166,7 +175,12 @@ export default function TeacherSavedSessions() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <SessionCard item={item} onResume={handleResume} onDelete={setToDelete} />
+            <SessionCard
+              item={item}
+              onResume={handleResume}
+              onDelete={setToDelete}
+              onEdit={handleEdit}
+            />
           )}
         />
       )}
@@ -195,8 +209,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: secondary2,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cardMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: secondary3,
+  },
   name: { fontSize: 15, fontWeight: '600', color: primary },
   meta: { fontSize: 12, color: secondary, marginTop: 2, textTransform: 'capitalize' },
   offlineTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },

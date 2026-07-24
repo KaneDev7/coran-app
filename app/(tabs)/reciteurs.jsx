@@ -6,6 +6,8 @@ import { useReciter } from '@/context/ReciterContext';
 import { usePlayer } from '@/context/PlayerContext';
 import { useLibrary } from '@/context/LibraryContext';
 import { useOffline } from '@/context/OfflineContext';
+import { useAuth } from '@/context/AuthContext';
+import { FREE_RECITER_COUNT } from '@/constants/premium';
 import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -14,13 +16,21 @@ const ReciterItem = ({ item, index }) => {
   const { isPlaying, isLoading, initParams } = usePlayer();
   const { setCurrentSlide, selectSartVerset, currentIndex } = useLibrary();
   const { isOfflineMode } = useOffline();
+  const { isPremium } = useAuth();
 
   const isActive = reciter === item.title;
   const iconName = isActive ? 'checkcircle' : 'checkcircleo';
+  // Réciteur réservé au premium : au-delà du quota gratuit et compte non premium.
+  const isLocked = !isPremium && index >= FREE_RECITER_COUNT;
   // En mode hors ligne, le changement de réciteur est verrouillé.
   const isDisabled = (isLoading && isPlaying) || isActive || isOfflineMode;
 
   const handleSelectReciter = async () => {
+    // Réciteur premium : on redirige vers l'offre plutôt que de sélectionner.
+    if (isLocked) {
+      router.push('/premium');
+      return;
+    }
     onSelectReciter(item.title);
     await initParams();
     setCurrentSlide(selectSartVerset);
@@ -51,18 +61,29 @@ const ReciterItem = ({ item, index }) => {
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.subtitle}>
-              <MaterialCommunityIcons name="microphone" size={14} color={secondary} />
-              {' '}Récitateur professionnel
-            </Text>
+            {isLocked ? (
+              <View style={styles.premiumTag}>
+                <MaterialCommunityIcons name="crown" size={12} color="#b8860b" />
+                <Text style={styles.premiumTagText}>Premium</Text>
+              </View>
+            ) : (
+              <Text style={styles.subtitle}>
+                <MaterialCommunityIcons name="microphone" size={14} color={secondary} />
+                {' '}Récitateur professionnel
+              </Text>
+            )}
           </View>
         </View>
 
-        <AntDesign 
-            name={iconName} 
-            size={20} 
-            color={isActive ? primary : secondary} 
+        {isLocked ? (
+          <MaterialCommunityIcons name="lock-outline" size={20} color="#b8860b" />
+        ) : (
+          <AntDesign
+            name={iconName}
+            size={20}
+            color={isActive ? primary : secondary}
           />
+        )}
       </LinearGradient>
     </Pressable>
   );
@@ -172,6 +193,23 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: secondary,
+  },
+  premiumTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff8e7',
+    borderWidth: 1,
+    borderColor: '#f0e2bb',
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  premiumTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#b8860b',
   },
   statusContainer: {
     flexDirection: 'row',

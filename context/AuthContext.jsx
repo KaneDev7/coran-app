@@ -1,7 +1,26 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import * as authApi from '@/services/auth'
 
 const AuthContext = createContext(null)
+
+// Un compte est réellement premium si le drapeau est actif ET que
+// l'échéance n'est pas dépassée. Une échéance nulle = premium accordé
+// manuellement sans expiration (support / backoffice).
+function computeIsPremium(user) {
+  if (!user?.premium) return false
+  if (!user.premiumUntil) return true
+  return new Date(user.premiumUntil).getTime() > Date.now()
+}
+
+function toUser(current) {
+  return {
+    id: current.id,
+    fullName: current.fullName,
+    email: current.email,
+    premium: current.premium,
+    premiumUntil: current.premiumUntil,
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -11,21 +30,42 @@ export function AuthProvider({ children }) {
 
 
   useEffect(() => {
-    authApi
-      .fetchCurrentUser()
-      .then(current => {
+    let active = true
+    const restore = async () => {
+      try {
+        const current = await authApi.fetchCurrentUser()
+        if (!active) return
         if (current) {
-          setUser({
-            id: current.id,
-            fullName: current.fullName,
-            email: current.email,
-            premium: current.premium,
-            premiumUntil: current.premiumUntil,
-          })
+          setUser(toUser(current))
+          return
         }
-      })
-      .finally(() => setIsAuthLoading(false))
+        // Session non confirmée : jeton absent/expiré OU backend
+        // injoignable. On nettoie les jetons en local pour repartir
+        // proprement sur l'écran de connexion (pas de splash bloqué).
+        await authApi.clearStoredSession().catch(() => {})
+        if (active) setUser(null)
+      } catch (e) {
+        await authApi.clearStoredSession().catch(() => {})
+        if (active) setUser(null)
+      } finally {
+        if (active) setIsAuthLoading(false)
+      }
+    }
+    restore()
+    return () => {
+      active = false
+    }
   }, [])
+
+  // Recharge le profil depuis le serveur (après un achat premium, par
+  // exemple) pour rafraîchir le statut sans se déconnecter.
+  const refreshUser = async () => {
+    const current = await authApi.fetchCurrentUser()
+    if (current) setUser(toUser(current))
+    return current
+  }
+
+  const isPremium = useMemo(() => computeIsPremium(user), [user])
 
   const register = (fullName, email, password) =>
     authApi.register(fullName, email, password)
@@ -58,6 +98,8 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         user,
+        isPremium,
+        refreshUser,
         isAuthLoading,
         register,
         confirmEmail,

@@ -53,7 +53,7 @@ const LINKS = [
 
 // Écran Paramètres — hors des onglets, au même niveau que l'accueil.
 export default function Settings() {
-  const { user, logout } = useAuth()
+  const { user, isPremium, logout } = useAuth()
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false)
 
   const goHome = () =>
@@ -99,19 +99,31 @@ export default function Settings() {
           <MaterialIcons name="chevron-right" size={22} color={secondary} />
         </Pressable>
 
-        {/* ---- Premium (préparation) ---- */}
+        {/* ---- Premium ---- */}
         <View style={styles.premiumCard}>
           <View style={styles.premiumHeader}>
             <MaterialCommunityIcons name="crown-outline" size={24} color="#b8860b" />
-            <Text style={styles.premiumTitle}>Passer à Premium</Text>
+            <Text style={styles.premiumTitle}>
+              {isPremium ? 'Compte Premium actif' : 'Passer à Premium'}
+            </Text>
           </View>
           <Text style={styles.premiumDesc}>
-            Téléchargements hors ligne illimités et nouvelles fonctionnalités à
-            venir.
+            {isPremium
+              ? user?.premiumUntil
+                ? `Accès valable jusqu'au ${new Date(
+                    user.premiumUntil,
+                  ).toLocaleDateString('fr-FR')}. Tous les réciteurs, hors-ligne illimité et Mode Professeur sans limite.`
+                : 'Tous les réciteurs, hors-ligne illimité et Mode Professeur sans limite.'
+              : 'Tous les réciteurs, téléchargements hors ligne illimités et Mode Professeur sans limite quotidienne.'}
           </Text>
-          <View style={styles.premiumButton}>
-            <Text style={styles.premiumButtonText}>Bientôt disponible</Text>
-          </View>
+          <Pressable
+            style={styles.premiumButtonActive}
+            onPress={() => router.push('/premium')}
+          >
+            <Text style={styles.premiumButtonText}>
+              {isPremium ? 'Gérer mon abonnement' : 'Découvrir Premium'}
+            </Text>
+          </Pressable>
         </View>
 
         {/* ---- Liens ---- */}
@@ -284,6 +296,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     opacity: 0.55,
+  },
+  premiumButtonActive: {
+    backgroundColor: '#b8860b',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
   },
   premiumButtonText: {
     color: '#fff',

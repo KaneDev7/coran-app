@@ -51,25 +51,15 @@ export async function deleteSession(userId, id) {
   }
 }
 
-// ---- Réglages par défaut d'une nouvelle séance ----
-// Persistés par utilisateur : vitesse, sensibilité micro, répétitions.
-// Une nouvelle séance démarre avec les dernières valeurs utilisées.
-const defaultsKey = userId => `teacher_defaults_${userId ?? 'anonymous'}`
-
-export async function getDefaults(userId) {
+// Met à jour (écrase) les paramètres d'une séance enregistrée par son id.
+// `patch` contient les champs à modifier (repetitions, rate, sensitivityDb).
+export async function updateSession(userId, id, patch) {
   try {
-    const raw = await AsyncStorage.getItem(defaultsKey(userId))
-    return raw ? JSON.parse(raw) : null
+    const existing = await getSavedSessions(userId)
+    const next = existing.map(s => (s.id === id ? { ...s, ...patch } : s))
+    await AsyncStorage.setItem(key(userId), JSON.stringify(next))
+    return next.find(s => s.id === id) ?? null
   } catch (e) {
     return null
-  }
-}
-
-export async function saveDefaults(userId, defaults) {
-  try {
-    await AsyncStorage.setItem(defaultsKey(userId), JSON.stringify(defaults))
-    return true
-  } catch (e) {
-    return false
   }
 }
