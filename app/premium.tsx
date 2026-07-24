@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import {
   View,
   Text,
@@ -22,8 +22,19 @@ import {
 } from '@/constants/premium'
 import { checkout, fetchMySubscription } from '@/services/subscriptions'
 
+// Détails de paiement renvoyés par le backend (checkout).
+interface PaymentInfo {
+  paymentUrl?: string
+  reference?: string
+}
+
+interface Benefit {
+  icon: ComponentProps<typeof MaterialCommunityIcons>['name']
+  text: string
+}
+
 // Avantages listés dans l'offre.
-const BENEFITS = [
+const BENEFITS: Benefit[] = [
   { icon: 'account-music', text: 'Tous les réciteurs (au lieu de ' + FREE_RECITER_COUNT + ')' },
   { icon: 'download', text: 'Téléchargements hors-ligne illimités' },
   { icon: 'school', text: 'Mode Professeur sans limite quotidienne' },
@@ -40,12 +51,17 @@ export default function Premium() {
   const [phone, setPhone] = useState('')
   const [status, setStatus] = useState('idle') // idle | initiating | pending | active | error
   const [message, setMessage] = useState('')
-  const [payment, setPayment] = useState(null)
+  const [payment, setPayment] = useState<PaymentInfo | null>(null)
 
-  const pollRef = useRef(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopPolling = () => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = null
+  }
 
   // Nettoyage du polling au démontage.
-  useEffect(() => () => clearInterval(pollRef.current), [])
+  useEffect(() => () => stopPolling(), [])
 
   const selectedPlan = PLANS.find(p => p.code === planCode)
 
@@ -67,14 +83,15 @@ export default function Premium() {
       return
     }
 
-    setPayment(result.payment)
+    const paymentInfo = result.payment as PaymentInfo | undefined
+    setPayment(paymentInfo ?? null)
     setStatus('pending')
     setMessage(
       'Validez le paiement sur votre téléphone, puis appuyez sur « J’ai payé ».',
     )
     // Ouvre le lien de paiement du fournisseur si présent.
-    if (result.payment?.paymentUrl) {
-      Linking.openURL(result.payment.paymentUrl).catch(() => {})
+    if (paymentInfo?.paymentUrl) {
+      Linking.openURL(paymentInfo.paymentUrl).catch(() => {})
     }
     startPolling()
   }
@@ -82,14 +99,14 @@ export default function Premium() {
   // Interroge le backend toutes les 4 s : dès que l'abonnement est actif,
   // on rafraîchit le profil et on affiche le succès.
   const startPolling = () => {
-    clearInterval(pollRef.current)
+    stopPolling()
     pollRef.current = setInterval(checkStatus, 4000)
   }
 
   const checkStatus = async () => {
     const sub = await fetchMySubscription()
-    if (sub?.success && sub.status === 'active') {
-      clearInterval(pollRef.current)
+    if (sub?.success && (sub as unknown as { status?: string }).status === 'active') {
+      stopPolling()
       await refreshUser()
       setStatus('active')
       setMessage('')
@@ -287,7 +304,7 @@ export default function Premium() {
               <>
                 <MaterialCommunityIcons name="crown-outline" size={18} color="#fff" />
                 <Text style={styles.primaryBtnText}>
-                  Payer {formatFcfa(selectedPlan.priceFcfa)}
+                  Payer {formatFcfa(selectedPlan?.priceFcfa ?? 0)}
                 </Text>
               </>
             )}
@@ -304,7 +321,7 @@ export default function Premium() {
   )
 }
 
-function Header({ onBack }) {
+function Header({ onBack }: { onBack: () => void }) {
   return (
     <View style={styles.header}>
       <Pressable onPress={onBack} hitSlop={10} style={styles.backBtn}>
