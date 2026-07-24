@@ -257,7 +257,7 @@ export function TeacherProvider({ children }) {
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri },
-        { shouldPlay: true, rate: rateRef.current, shouldCorrectPitch: true, volume: 1 },
+        { shouldPlay: true, volume: 1 },
         status => {
           if (session !== sessionRef.current) return
           if (status.didJustFinish) afterRecite(session)
@@ -270,6 +270,11 @@ export function TeacherProvider({ children }) {
         return
       }
       soundRef.current = sound
+      // Applique la vitesse APRÈS chargement, avec correction du ton
+      // (2e arg = true) — comme le mode libre. Régler shouldCorrectPitch
+      // dans createAsync n'est pas fiable et laissait la voix changer de
+      // ton (aiguë en rapide).
+      sound.setRateAsync(rateRef.current, true).catch(() => {})
     } catch (e) {
       // En cas d'échec de lecture, on passe à l'écoute quand même
       // pour ne pas bloquer le drill.

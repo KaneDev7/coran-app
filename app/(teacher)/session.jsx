@@ -144,30 +144,35 @@ export default function TeacherSession() {
 
       {/* Contrôle de vitesse (en direct) */}
       <View style={styles.rateControl}>
-        <MaterialCommunityIcons name="speedometer-slow" size={18} color={secondary} />
-        <InputRange value={rate} setValue={setRate} min={0.75} max={1.25} />
-        <MaterialCommunityIcons name="speedometer" size={18} color={secondary} />
-        <Text style={styles.rateValue}>{rate.toFixed(2)}×</Text>
+        <View style={styles.sensitivityRow}>
+          <MaterialCommunityIcons name="speedometer-slow" size={18} color={secondary} />
+          <InputRange value={rate} setValue={setRate} min={0.75} max={1.25} />
+          <MaterialCommunityIcons name="speedometer" size={18} color={secondary} />
+          <Text style={styles.rateValue}>{rate.toFixed(2)}×</Text>
+        </View>
+        <Text style={styles.sensitivityHint}>
+          Vitesse de récitation du réciteur (le ton de la voix ne change pas).
+        </Text>
       </View>
 
       {/* Contrôle de sensibilité du micro (en direct) */}
       <View style={styles.sensitivityControl}>
         <View style={styles.sensitivityRow}>
-          <MaterialCommunityIcons name="volume-low" size={18} color={secondary} />
+          <MaterialCommunityIcons name="microphone-outline" size={18} color={secondary} />
           <InputRange
             value={settings.sensitivityDb}
             setValue={setSensitivity}
             min={MIN_SENSITIVITY_DB}
             max={MAX_SENSITIVITY_DB}
           />
-          <MaterialCommunityIcons name="volume-high" size={18} color={secondary} />
+          <MaterialCommunityIcons name="microphone" size={18} color={secondary} />
         </View>
         <Text style={styles.sensitivityLabel}>
           🎙️ {sensitivityLabel(settings.sensitivityDb)}
         </Text>
         <Text style={styles.sensitivityHint}>
-          Trop bruyant ? Glissez vers la droite pour que le micro ignore les
-          bruits de fond.
+          À quel point le micro doit vous entendre. Endroit bruyant ? Glissez
+          vers la droite pour ignorer les bruits de fond.
         </Text>
       </View>
 
@@ -266,15 +271,13 @@ const styles = StyleSheet.create({
   },
   micZone: { alignItems: 'center', marginTop: 12 },
   rateControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     marginTop: 12,
     marginBottom: 8,
     marginHorizontal: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
+    gap: 4,
   },
   rateValue: {
     minWidth: 40,

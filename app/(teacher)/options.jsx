@@ -141,7 +141,7 @@ export default function TeacherOptionsStep() {
           <Text style={styles.cardTitle}>Vitesse de récitation</Text>
           <Text style={styles.cardHint}>
             Ralentissez pour bien mémoriser, accélérez quand vous maîtrisez.
-            Ajustable aussi en direct pendant la séance.
+            Le ton de la voix ne change pas. Ajustable aussi en direct.
           </Text>
           <View style={styles.rateRow}>
             <MaterialCommunityIcons name="speedometer-slow" size={20} color={secondary} />
@@ -159,14 +159,14 @@ export default function TeacherOptionsStep() {
             de fond. Réglable aussi en direct.
           </Text>
           <View style={styles.rateRow}>
-            <MaterialCommunityIcons name="volume-low" size={20} color={secondary} />
+            <MaterialCommunityIcons name="microphone-outline" size={20} color={secondary} />
             <InputRange
               value={settings.sensitivityDb}
               setValue={setSensitivity}
               min={MIN_SENSITIVITY_DB}
               max={MAX_SENSITIVITY_DB}
             />
-            <MaterialCommunityIcons name="volume-high" size={20} color={secondary} />
+            <MaterialCommunityIcons name="microphone" size={20} color={secondary} />
           </View>
           <Text style={styles.rateValue}>{sensitivityLabel(settings.sensitivityDb)}</Text>
         </View>
