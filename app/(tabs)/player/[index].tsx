@@ -17,7 +17,7 @@ import SelectVerset from "@/components/SelectVerset"
 
 import VolumeInput from "@/components/VolumeInput"
 import RateInput from "@/components/RateInput"
-import { ConfirmDialog } from 'react-native-simple-dialogs';
+import { ConfirmDialog } from '@/components/ui/dialogs';
 
 export default function Player() {
 
@@ -41,13 +41,14 @@ export default function Player() {
 
 
     useEffect(() => {
-        const isLesson = index?.includes('l')
-        const currentIndex = isLesson ?
-            parseFloat(index.split("-")[1]) :
-            index === undefined ? 0 : index
+        const indexStr = Array.isArray(index) ? index[0] : index ?? ''
+        const isLesson = indexStr.includes('l')
+        const currentIndex = isLesson
+            ? parseFloat(indexStr.split('-')[1])
+            : indexStr === '' ? 0 : Number(indexStr)
         if (!isLesson) {
             initAudio(currentIndex)
-        } else{
+        } else {
             setCurrentIndex(currentIndex)
         }
     }, [index])

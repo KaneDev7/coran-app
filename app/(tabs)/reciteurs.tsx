@@ -10,8 +10,10 @@ import { useAuth } from '@/context/AuthContext';
 import { FREE_RECITER_COUNT } from '@/constants/premium';
 import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import type { ComponentProps } from 'react';
+import type { Reciter } from '@/types/models';
 
-const ReciterItem = ({ item, index }) => {
+const ReciterItem = ({ item, index }: { item: Reciter; index: number }) => {
   const { reciter, onSelectReciter } = useReciter();
   const { isPlaying, isLoading, initParams } = usePlayer();
   const { setCurrentSlide, selectSartVerset, currentIndex } = useLibrary();
@@ -19,7 +21,9 @@ const ReciterItem = ({ item, index }) => {
   const { isPremium } = useAuth();
 
   const isActive = reciter === item.title;
-  const iconName = isActive ? 'checkcircle' : 'checkcircleo';
+  const iconName: ComponentProps<typeof MaterialCommunityIcons>['name'] = isActive
+    ? 'check-circle'
+    : 'checkbox-blank-circle-outline';
   // Réciteur réservé au premium : au-delà du quota gratuit et compte non premium.
   const isLocked = !isPremium && index >= FREE_RECITER_COUNT;
   // En mode hors ligne, le changement de réciteur est verrouillé.
@@ -78,7 +82,7 @@ const ReciterItem = ({ item, index }) => {
         {isLocked ? (
           <MaterialCommunityIcons name="lock-outline" size={20} color="#b8860b" />
         ) : (
-          <AntDesign
+          <MaterialCommunityIcons
             name={iconName}
             size={20}
             color={isActive ? primary : secondary}

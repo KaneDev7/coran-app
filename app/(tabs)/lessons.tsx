@@ -20,18 +20,25 @@ import {
   FontAwesome,
   Feather,
 } from "@expo/vector-icons";
-import { ConfirmDialog } from "react-native-simple-dialogs";
+import { ConfirmDialog } from "@/components/ui/dialogs";
 import { LinearGradient } from "expo-linear-gradient";
 import { EmptyList } from "../../components/EmptyList";
 import * as Progress from "react-native-progress";
+import type { Lesson, DownloadState, DownloadStatus } from "@/types/models";
+
+interface VerseChipProps {
+  verseNumber: string;
+  status: DownloadStatus;
+  onRetry: () => void;
+}
 
 // Recherche tolérante aux accents.
-const normalize = (value) =>
+const normalize = (value: string) =>
   String(value).trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 // Statut global d'un passage à partir des statuts de ses versets.
 // Un passage sans suivi (anciens téléchargements) est considéré complet.
-const getLessonStatus = (lesson, downloadState) => {
+const getLessonStatus = (lesson: Lesson, downloadState: DownloadState) => {
   const versets = downloadState[lesson.id]?.versets;
   if (!versets) return "complete";
   const values = Object.values(versets);
@@ -50,7 +57,7 @@ const STATUS_FILTERS = [
 
 // Pastille de statut d'un verset : ✓ téléchargé, spinner en cours,
 // bouton "réessayer" si erreur.
-const VerseChip = ({ verseNumber, status, onRetry }) => {
+const VerseChip = ({ verseNumber, status, onRetry }: VerseChipProps) => {
   if (status === "error") {
     return (
       <Pressable
@@ -100,7 +107,7 @@ const VerseChip = ({ verseNumber, status, onRetry }) => {
   );
 };
 
-const Item = ({ item, index }) => {
+const Item = ({ item, index }: { item: Lesson; index: number }) => {
   const { isLoading, isPlaying, loadSelectLesson } = usePlayer();
   const {
     onDeleteLesson,
@@ -115,7 +122,7 @@ const Item = ({ item, index }) => {
   const [dialogVisible, setDialogVisible] = useState(false);
 
   const handleSelectLesson = async () => {
-    router.push({ pathname: `player/l-${item.index}` });
+    router.push({ pathname: '/player/[index]', params: { index: `l-${item.index}` } });
     loadSelectLesson(item);
   };
 
@@ -192,7 +199,7 @@ const Item = ({ item, index }) => {
               <View style={styles.suratInfo}>
                 <Ionicons name="bookmark" size={14} color={secondary} />
                 <Text style={styles.suratText}>
-                  {sourates[parseFloat(item.index)]?.nom}
+                  {sourates[item.index]?.nom}
                 </Text>
               </View>
               <View style={styles.versetRange}>
@@ -322,7 +329,7 @@ export default function Lessons() {
     const q = normalize(query);
 
     const filtered = lessonList.filter((lesson) => {
-      const nom = sourates[parseFloat(lesson.index)]?.nom || "";
+      const nom = sourates[lesson.index]?.nom || "";
       if (q && !normalize(nom).includes(q)) return false;
       if (
         statusFilter !== "all" &&
@@ -332,11 +339,12 @@ export default function Lessons() {
       return true;
     });
 
-    const bySourate = new Map();
+    const bySourate = new Map<string, Lesson[]>();
     filtered.forEach((lesson) => {
-      const nom = sourates[parseFloat(lesson.index)]?.nom || "Autre";
-      if (!bySourate.has(nom)) bySourate.set(nom, []);
-      bySourate.get(nom).push(lesson);
+      const nom = sourates[lesson.index]?.nom || "Autre";
+      const arr = bySourate.get(nom) ?? [];
+      arr.push(lesson);
+      bySourate.set(nom, arr);
     });
 
     return [...bySourate.entries()].map(([title, data]) => ({ title, data }));

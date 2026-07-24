@@ -14,13 +14,20 @@ import {
   MaterialIcons,
   Feather,
 } from '@expo/vector-icons'
-import { ConfirmDialog } from 'react-native-simple-dialogs'
+import { ConfirmDialog } from '@/components/ui/dialogs'
 import { router } from 'expo-router'
+import type { ComponentProps } from 'react'
 import { primary, secondary, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
 
+interface SettingsLink {
+  icon: ComponentProps<typeof MaterialCommunityIcons>['name']
+  label: string
+  action: () => void
+}
+
 // Liens externes : à remplacer par les vraies URLs quand elles existeront.
-const LINKS = [
+const LINKS: SettingsLink[] = [
   {
     icon: 'share-variant',
     label: "Partager l'application",
