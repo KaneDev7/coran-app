@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics'
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av'
 import { convertSelectVerset } from '@/helpers'
 import { sourates } from '@/constants/sorats.list'
+import { reciteurs } from '@/constants/reciteurs'
 import {
   getDownloadedAudio,
   getDownloadedText,
@@ -43,9 +44,11 @@ import {
 const TeacherContext = createContext(null)
 
 const PROMPT_DELAY_MS = 800
-// Valeurs équilibrées par défaut d'une nouvelle séance.
-const DEFAULT_REPETITIONS = 3
+// Valeurs par défaut d'une nouvelle séance.
+const DEFAULT_REPETITIONS = 2
 const DEFAULT_RATE = 1
+// Réciteur par défaut : le premier de la liste.
+const DEFAULT_RECITER = reciteurs[0].title
 
 export function TeacherProvider({ children }) {
   const { user } = useAuth()
@@ -55,8 +58,8 @@ export function TeacherProvider({ children }) {
   const [surahIndex, setSurahIndex] = useState(0)
   const [startVerse, setStartVerse] = useState(1)
   const [endVerse, setEndVerse] = useState(7)
-  const [repetitions, setRepetitionsState] = useState(3)
-  const [reciter, setReciter] = useState('aymanswoaid')
+  const [repetitions, setRepetitionsState] = useState(DEFAULT_REPETITIONS)
+  const [reciter, setReciter] = useState(DEFAULT_RECITER)
   const [rate, setRate] = useState(1)
   const [settings, setSettings] = useState({
     sensitivityDb: DEFAULT_SENSITIVITY_DB,
@@ -126,6 +129,7 @@ export function TeacherProvider({ children }) {
   // début de CHAQUE nouvelle séance : les ajustements en direct d'une
   // séance ne doivent jamais « polluer » la configuration suivante.
   const resetSettingsToDefaults = () => {
+    setReciter(DEFAULT_RECITER)
     repetitionsRef.current = DEFAULT_REPETITIONS
     setRepetitionsState(DEFAULT_REPETITIONS)
     rateRef.current = DEFAULT_RATE

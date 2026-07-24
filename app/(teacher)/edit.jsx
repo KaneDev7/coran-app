@@ -32,7 +32,7 @@ export default function TeacherEditSession() {
   const { user } = useAuth()
 
   const [session, setSession] = useState(null)
-  const [repetitions, setRepetitions] = useState(3)
+  const [repetitions, setRepetitions] = useState(2)
   const [rate, setRate] = useState(1)
   const [sensitivityDb, setSensitivityDb] = useState(DEFAULT_SENSITIVITY_DB)
 
@@ -41,7 +41,7 @@ export default function TeacherEditSession() {
       const found = list.find(s => String(s.id) === String(id))
       if (found) {
         setSession(found)
-        setRepetitions(found.repetitions ?? 3)
+        setRepetitions(found.repetitions ?? 2)
         setRate(found.rate ?? 1)
         setSensitivityDb(found.sensitivityDb ?? DEFAULT_SENSITIVITY_DB)
       }
