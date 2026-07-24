@@ -42,11 +42,11 @@ export default function Login() {
         const resend = await resendCode(email.trim())
         router.push({
           pathname: '/verify',
-          params: { email: email.trim(), devCode: resend.devCode },
+          params: { email: email.trim(), devCode: resend.devCode as string },
         })
         return
       }
-      setError(result.error)
+      setError(result.error ?? 'Une erreur est survenue')
     }
     // Si succès : la garde du layout racine bascule vers les onglets.
   }

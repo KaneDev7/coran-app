@@ -49,14 +49,14 @@ export default function Register() {
     setIsSubmitting(false)
 
     if (!result.success) {
-      setError(result.error)
+      setError(result.error ?? 'Une erreur est survenue')
       return
     }
 
     // Compte créé : vérification de l'email pour activer.
     router.push({
       pathname: '/verify',
-      params: { email: email.trim(), devCode: result.devCode },
+      params: { email: email.trim(), devCode: result.devCode as string },
     })
   }
 

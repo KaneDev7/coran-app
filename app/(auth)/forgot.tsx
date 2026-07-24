@@ -34,13 +34,13 @@ export default function ForgotPassword() {
     setIsSubmitting(false)
 
     if (!result.success) {
-      setError(result.error)
+      setError(result.error ?? 'Une erreur est survenue')
       return
     }
 
     router.push({
       pathname: '/reset',
-      params: { email: email.trim(), devCode: result.devCode },
+      params: { email: email.trim(), devCode: result.devCode as string },
     })
   }
 

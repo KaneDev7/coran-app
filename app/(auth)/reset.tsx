@@ -17,7 +17,9 @@ import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { useAuth } from '@/context/AuthContext'
 
 export default function ResetPassword() {
-  const { email, devCode } = useLocalSearchParams()
+  const params = useLocalSearchParams()
+  const email = String(params.email ?? '')
+  const devCode = params.devCode
   const { resetPassword } = useAuth()
 
   const [code, setCode] = useState('')
@@ -38,7 +40,7 @@ export default function ResetPassword() {
     setIsSubmitting(false)
 
     if (!result.success) {
-      setError(result.error)
+      setError(result.error ?? 'Une erreur est survenue')
       return
     }
     setSuccess(true)

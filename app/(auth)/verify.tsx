@@ -17,17 +17,18 @@ import { useAuth } from '@/context/AuthContext'
 const CODE_LENGTH = 6
 
 export default function Verify() {
-  const { email, devCode: initialDevCode } = useLocalSearchParams()
+  const params = useLocalSearchParams()
+  const email = String(params.email ?? '')
   const { confirmEmail, resendCode } = useAuth()
 
   const [code, setCode] = useState('')
-  const [devCode, setDevCode] = useState(initialDevCode)
+  const [devCode, setDevCode] = useState(String(params.devCode ?? ''))
   const [error, setError] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
   const [resendMessage, setResendMessage] = useState('')
-  const inputRef = useRef(null)
+  const inputRef = useRef<TextInput>(null)
 
-  const handleChangeCode = async value => {
+  const handleChangeCode = async (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, CODE_LENGTH)
     setCode(digits)
     setError('')
@@ -39,7 +40,7 @@ export default function Verify() {
       setIsVerifying(false)
 
       if (!result.success) {
-        setError(result.error)
+        setError(result.error ?? 'Une erreur est survenue')
         setCode('')
       }
       // Si succès : la garde du layout racine bascule vers les onglets.
@@ -51,7 +52,7 @@ export default function Verify() {
     setCode('')
     const result = await resendCode(email)
     if (result.success) {
-      if (result.devCode) setDevCode(result.devCode)
+      if (result.devCode) setDevCode(result.devCode as string)
       setResendMessage('Nouveau code envoyé')
       setTimeout(() => setResendMessage(''), 3000)
     }
