@@ -1,14 +1,28 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+  type ReactNode,
+} from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { storeReciter } from '@/services/storage'
 
-// Domaine : réciteur sélectionné (persisté localement).
-const ReciterContext = createContext(null)
+interface ReciterContextValue {
+  reciter: string
+  setReciter: Dispatch<SetStateAction<string>>
+  onSelectReciter: (value: string) => Promise<void>
+}
 
-export function ReciterProvider({ children }) {
+// Domaine : réciteur sélectionné (persisté localement).
+const ReciterContext = createContext<ReciterContextValue | null>(null)
+
+export function ReciterProvider({ children }: { children: ReactNode }) {
   const [reciter, setReciter] = useState('aymanswoaid')
 
-  const getReciter = async () => {
+  const getReciter = async (): Promise<void> => {
     try {
       const value = (await AsyncStorage.getItem('reciter')) || 'aymanswoaid'
       if (value !== null) setReciter(value)
@@ -17,7 +31,7 @@ export function ReciterProvider({ children }) {
     }
   }
 
-  const onSelectReciter = async value => {
+  const onSelectReciter = async (value: string): Promise<void> => {
     await storeReciter(value)
     setReciter(value)
   }
@@ -33,4 +47,5 @@ export function ReciterProvider({ children }) {
   )
 }
 
-export const useReciter = () => useContext(ReciterContext)
+export const useReciter = (): ReciterContextValue =>
+  useContext(ReciterContext) as ReciterContextValue

@@ -1,11 +1,37 @@
-import { createContext, useContext, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+  type ReactNode,
+} from 'react'
 import { sourates } from '@/constants/sorats.list'
+
+interface LibraryContextValue {
+  surahNumber: number
+  currentIndex: number
+  surahTextValue: string
+  selectSartVerset: number
+  selectEndVerset: number
+  currentSlide: number
+  firstVersetOfSelectedSurah: number
+  lastVersetOfSelectedSurah: number
+  setSurahNumber: Dispatch<SetStateAction<number>>
+  setCurrentIndex: Dispatch<SetStateAction<number>>
+  setSurahTextValue: Dispatch<SetStateAction<string>>
+  setSelectSartVerset: Dispatch<SetStateAction<number>>
+  setSelectEndVerset: Dispatch<SetStateAction<number>>
+  setCurrentSlide: Dispatch<SetStateAction<number>>
+  setFirstVersetOfSelectedSurah: Dispatch<SetStateAction<number>>
+  setLastVersetOfSelectedSurah: Dispatch<SetStateAction<number>>
+}
 
 // Domaine : navigation dans le Coran — sourate courante et
 // sélection de la plage de versets à écouter.
-const LibraryContext = createContext(null)
+const LibraryContext = createContext<LibraryContextValue | null>(null)
 
-export function LibraryProvider({ children }) {
+export function LibraryProvider({ children }: { children: ReactNode }) {
   const [surahNumber, setSurahNumber] = useState(0)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [surahTextValue, setSurahTextValue] = useState(sourates[0].nom)
@@ -42,4 +68,5 @@ export function LibraryProvider({ children }) {
   )
 }
 
-export const useLibrary = () => useContext(LibraryContext)
+export const useLibrary = (): LibraryContextValue =>
+  useContext(LibraryContext) as LibraryContextValue
