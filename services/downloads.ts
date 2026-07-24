@@ -14,7 +14,9 @@ export async function downloadAudio (name: string, url: string) {
       {}
     )
 
-    const { uri } = await downloadResumable.downloadAsync()
+    const result = await downloadResumable.downloadAsync()
+    if (!result) return null
+    const { uri } = result
 
     // Stocker le chemin du fichier dans AsyncStorage
     await AsyncStorage.setItem(name, uri)
