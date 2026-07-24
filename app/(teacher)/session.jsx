@@ -151,7 +151,7 @@ export default function TeacherSession() {
           <Text style={styles.rateValue}>{rate.toFixed(2)}×</Text>
         </View>
         <Text style={styles.sensitivityHint}>
-          Vitesse de récitation du réciteur (le ton de la voix ne change pas).
+          Vitesse de récitation du réciteur.
         </Text>
       </View>
 
@@ -171,8 +171,7 @@ export default function TeacherSession() {
           🎙️ {sensitivityLabel(settings.sensitivityDb)}
         </Text>
         <Text style={styles.sensitivityHint}>
-          À quel point le micro doit vous entendre. Endroit bruyant ? Glissez
-          vers la droite pour ignorer les bruits de fond.
+          Endroit bruyant ? Glissez vers la droite pour ignorer les bruits de fond.
         </Text>
       </View>
 

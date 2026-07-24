@@ -22,8 +22,6 @@ import { getCachedAudio, cacheAudio, getCachedText, cacheText } from '@/services
 import {
   saveSession,
   deleteSession,
-  getDefaults,
-  saveDefaults,
 } from '@/services/teacherStorage'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -45,6 +43,9 @@ import {
 const TeacherContext = createContext(null)
 
 const PROMPT_DELAY_MS = 800
+// Valeurs équilibrées par défaut d'une nouvelle séance.
+const DEFAULT_REPETITIONS = 3
+const DEFAULT_RATE = 1
 
 export function TeacherProvider({ children }) {
   const { user } = useAuth()
@@ -101,41 +102,41 @@ export function TeacherProvider({ children }) {
   // ces valeurs via des refs pour que les réglages en direct (vitesse,
   // sensibilité) soient pris en compte à chaque verset, pas seulement au
   // premier.
-  const rateRef = useRef(1)
-  const repetitionsRef = useRef(3)
+  const rateRef = useRef(DEFAULT_RATE)
+  const repetitionsRef = useRef(DEFAULT_REPETITIONS)
   const settingsRef = useRef({
     sensitivityDb: DEFAULT_SENSITIVITY_DB,
     silenceTimeoutMs: DEFAULT_SILENCE_TIMEOUT_MS,
     promptDelayMs: PROMPT_DELAY_MS,
   })
-  // Vrai quand la config vient d'un passage repris (loadConfig) : on
-  // n'écrase alors PAS les réglages par défaut au démarrage.
-  const resumedRef = useRef(false)
 
   // Le mode Professeur n'autorise que Ayman Swoaid comme réciteur (les
   // autres sont grisés dans l'UI) : pas de chargement du réciteur
   // persisté par le mode Révision libre, sous peine de désaligner la
   // présélection avec ce qui est affiché comme actif.
 
-  // Persiste les réglages courants comme valeurs par défaut d'une
-  // nouvelle séance (point 4 : l'utilisateur modifie ses défauts).
-  const persistDefaults = () => {
-    saveDefaults(userId, {
-      repetitions: repetitionsRef.current,
-      rate: rateRef.current,
-      sensitivityDb: settingsRef.current.sensitivityDb,
-    })
-  }
-
-  // Setter de répétitions : garde la ref à jour (persistance des défauts).
+  // Setter de répétitions : garde la ref à jour (utilisée par le moteur
+  // et la sauvegarde hors ligne).
   const setRepetitions = value => {
     repetitionsRef.current = value
     setRepetitionsState(value)
   }
 
+  // Remet les réglages aux valeurs équilibrées par défaut. Appelé au
+  // début de CHAQUE nouvelle séance : les ajustements en direct d'une
+  // séance ne doivent jamais « polluer » la configuration suivante.
+  const resetSettingsToDefaults = () => {
+    repetitionsRef.current = DEFAULT_REPETITIONS
+    setRepetitionsState(DEFAULT_REPETITIONS)
+    rateRef.current = DEFAULT_RATE
+    setRate(DEFAULT_RATE)
+    settingsRef.current = { ...settingsRef.current, sensitivityDb: DEFAULT_SENSITIVITY_DB }
+    setSettings(s => ({ ...s, sensitivityDb: DEFAULT_SENSITIVITY_DB }))
+  }
+
   // ---- Sélection depuis l'assistant ----
   const selectSurah = index => {
-    resumedRef.current = false // nouvelle séance : les réglages deviennent les défauts
+    resetSettingsToDefaults() // nouvelle séance : réglages remis à l'équilibre
     setSurahIndex(index)
     setStartVerse(1)
     setEndVerse(sourates[index]?.versets ?? 1)
@@ -143,7 +144,6 @@ export function TeacherProvider({ children }) {
 
   // Charge une configuration complète (reprise d'un passage sauvegardé).
   const loadConfig = config => {
-    resumedRef.current = true
     setSurahIndex(config.surahIndex)
     setStartVerse(config.startVerse)
     setEndVerse(config.endVerse)
@@ -358,10 +358,6 @@ export function TeacherProvider({ children }) {
 
   // ---- Commandes exposées à l'UI ----
   async function start() {
-    // Nouvelle séance (non reprise) : les réglages utilisés deviennent
-    // les valeurs par défaut de la prochaine séance.
-    if (!resumedRef.current) persistDefaults()
-
     sessionRef.current += 1
     const session = sessionRef.current
     verseRef.current = startVerse
@@ -503,8 +499,6 @@ export function TeacherProvider({ children }) {
   // Enregistre la config courante ET lance son téléchargement hors ligne.
   // Renvoie l'entrée créée (avec son id) pour la navigation.
   const saveSessionOffline = async () => {
-    // Les réglages utilisés pour ce passage deviennent aussi les défauts.
-    persistDefaults()
     const config = {
       surahIndex,
       startVerse,
@@ -537,9 +531,10 @@ export function TeacherProvider({ children }) {
     applyDownloadState(rest)
   }
 
-  // Au montage / changement d'utilisateur : charge le suivi persisté (les
-  // téléchargements interrompus 'pending'/'downloading' → 'error' pour
-  // proposer un nouvel essai) et les réglages par défaut.
+  // Au montage / changement d'utilisateur : charge le suivi de
+  // téléchargement persisté. Les téléchargements interrompus
+  // ('pending'/'downloading') repassent en 'error' pour proposer un
+  // nouvel essai.
   useEffect(() => {
     const load = async () => {
       try {
@@ -556,22 +551,6 @@ export function TeacherProvider({ children }) {
       } catch (e) {
         downloadStateRef.current = {}
         setDownloadState({})
-      }
-
-      const defaults = await getDefaults(userId)
-      if (defaults) {
-        if (defaults.repetitions != null) {
-          repetitionsRef.current = defaults.repetitions
-          setRepetitionsState(defaults.repetitions)
-        }
-        if (defaults.rate != null) {
-          rateRef.current = defaults.rate
-          setRate(defaults.rate)
-        }
-        if (defaults.sensitivityDb != null) {
-          settingsRef.current = { ...settingsRef.current, sensitivityDb: defaults.sensitivityDb }
-          setSettings(s => ({ ...s, sensitivityDb: defaults.sensitivityDb }))
-        }
       }
     }
     load()

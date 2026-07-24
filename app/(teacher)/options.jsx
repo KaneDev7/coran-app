@@ -140,8 +140,8 @@ export default function TeacherOptionsStep() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Vitesse de récitation</Text>
           <Text style={styles.cardHint}>
-            Ralentissez pour bien mémoriser, accélérez quand vous maîtrisez.
-            Le ton de la voix ne change pas. Ajustable aussi en direct.
+            Ralentissez pour mémoriser, accélérez quand vous maîtrisez.
+            Ajustable en direct.
           </Text>
           <View style={styles.rateRow}>
             <MaterialCommunityIcons name="speedometer-slow" size={20} color={secondary} />

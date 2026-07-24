@@ -24,7 +24,6 @@ export default function RateInput() {
                 />
                 <MaterialCommunityIcons name="speedometer" size={20} color={secondary} />
             </View>
-            <Text style={style.hint}>Le ton de la voix ne change pas.</Text>
         </View>
     )
 }
@@ -46,10 +45,6 @@ const style = StyleSheet.create({
     value: {
         fontSize: 13,
         fontWeight: '600',
-        color: secondary,
-    },
-    hint: {
-        fontSize: 11,
         color: secondary,
     },
     container: {
