@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons'
-import { ConfirmDialog } from 'react-native-simple-dialogs'
+import { ConfirmDialog } from '@/components/ui/dialogs'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { reciteurs } from '@/constants/reciteurs'
 import { InputRange } from '@/components/ui/InputRange'
@@ -51,7 +51,7 @@ export default function TeacherOptionsStep() {
   // Modal de confirmation avant téléchargement hors ligne.
   const [confirmVisible, setConfirmVisible] = useState(false)
 
-  const changeRep = delta =>
+  const changeRep = (delta: number) =>
     setRepetitions(Math.max(MIN_REP, Math.min(MAX_REP, repetitions + delta)))
 
   // Enregistre + télécharge la séance pour un accès hors ligne, puis

@@ -10,17 +10,31 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Progress from 'react-native-progress'
-import { ConfirmDialog } from 'react-native-simple-dialogs'
+import { ConfirmDialog } from '@/components/ui/dialogs'
 import { primary, secondary, secondary2, secondary3 } from '@/style/variables'
 import { sourates } from '@/constants/sorats.list'
 import { StepHeader } from '@/components/teacher/StepHeader'
 import { useTeacher } from '@/context/TeacherContext'
 import { useAuth } from '@/context/AuthContext'
 import { getSavedSessions } from '@/services/teacherStorage'
+import type { SavedSession, DownloadStatus } from '@/types/models'
+
+interface VerseChipProps {
+  verseNumber: string
+  status: DownloadStatus
+  onRetry: () => void
+}
+
+interface SessionCardProps {
+  item: SavedSession
+  onResume: (config: SavedSession) => void
+  onDelete: (session: SavedSession) => void
+  onEdit: (session: SavedSession) => void
+}
 
 // Pastille de statut d'un verset : ✓ téléchargé, spinner en cours,
 // horloge en attente, bouton « réessayer » si erreur.
-function VerseChip({ verseNumber, status, onRetry }) {
+function VerseChip({ verseNumber, status, onRetry }: VerseChipProps) {
   if (status === 'error') {
     return (
       <Pressable style={[styles.chip, styles.chipError]} onPress={onRetry}>
@@ -46,7 +60,7 @@ function VerseChip({ verseNumber, status, onRetry }) {
   )
 }
 
-function SessionCard({ item, onResume, onDelete, onEdit }) {
+function SessionCard({ item, onResume, onDelete, onEdit }: SessionCardProps) {
   const { downloadState, retryVerse } = useTeacher()
 
   const versets = downloadState[item.id]?.versets || null
@@ -123,8 +137,8 @@ export default function TeacherSavedSessions() {
   const { loadConfig, removeSessionOffline } = useTeacher()
   const { user } = useAuth()
 
-  const [saved, setSaved] = useState([])
-  const [toDelete, setToDelete] = useState(null)
+  const [saved, setSaved] = useState<SavedSession[]>([])
+  const [toDelete, setToDelete] = useState<SavedSession | null>(null)
 
   const refresh = useCallback(() => {
     getSavedSessions(user?.id).then(setSaved)
@@ -132,12 +146,12 @@ export default function TeacherSavedSessions() {
 
   useFocusEffect(refresh)
 
-  const handleResume = config => {
+  const handleResume = (config: SavedSession) => {
     loadConfig(config)
     router.push('/session')
   }
 
-  const handleEdit = session => {
+  const handleEdit = (session: SavedSession) => {
     router.push({ pathname: '/edit', params: { id: String(session.id) } })
   }
 

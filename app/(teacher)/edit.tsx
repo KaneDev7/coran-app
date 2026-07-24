@@ -15,6 +15,7 @@ import { InputRange } from '@/components/ui/InputRange'
 import { StepHeader } from '@/components/teacher/StepHeader'
 import { useAuth } from '@/context/AuthContext'
 import { getSavedSessions, updateSession } from '@/services/teacherStorage'
+import type { SavedSession } from '@/types/models'
 import {
   sensitivityLabel,
   MIN_SENSITIVITY_DB,
@@ -31,7 +32,7 @@ export default function TeacherEditSession() {
   const { id } = useLocalSearchParams()
   const { user } = useAuth()
 
-  const [session, setSession] = useState(null)
+  const [session, setSession] = useState<SavedSession | null>(null)
   const [repetitions, setRepetitions] = useState(2)
   const [rate, setRate] = useState(1)
   const [sensitivityDb, setSensitivityDb] = useState(DEFAULT_SENSITIVITY_DB)
@@ -48,11 +49,12 @@ export default function TeacherEditSession() {
     })
   }, [id, user?.id])
 
-  const changeRep = delta =>
+  const changeRep = (delta: number) =>
     setRepetitions(r => Math.max(MIN_REP, Math.min(MAX_REP, r + delta)))
 
   const handleSave = async () => {
-    await updateSession(user?.id, session?.id, { repetitions, rate, sensitivityDb })
+    if (!session) return
+    await updateSession(user?.id, session.id, { repetitions, rate, sensitivityDb })
     router.back()
   }
 

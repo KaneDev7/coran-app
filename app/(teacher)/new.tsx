@@ -19,7 +19,7 @@ import { SurahCard } from '@/components/SurahCard'
 import { StepHeader } from '@/components/teacher/StepHeader'
 import { useTeacher } from '@/context/TeacherContext'
 
-const normalize = value =>
+const normalize = (value: string) =>
   value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 // Nouvelle séance : choix de la sourate ET de la plage de versets dans
@@ -62,18 +62,18 @@ export default function TeacherNewSession() {
 
   const verseSpan = endVerse - startVerse + 1
 
-  const handleSelectSurah = index => {
+  const handleSelectSurah = (index: number) => {
     selectSurah(index)
     setPicked(true)
     setOpenStart(false)
     setOpenEnd(false)
   }
 
-  const handleStart = value => {
+  const handleStart = (value: number) => {
     setStartVerse(value)
     if (value > endVerse) setEndVerse(value)
   }
-  const handleEnd = value => {
+  const handleEnd = (value: number) => {
     if (value < startVerse) setEndVerse(startVerse)
     else setEndVerse(value)
   }
@@ -143,7 +143,7 @@ export default function TeacherNewSession() {
                   value={startVerse}
                   items={verseItems}
                   setValue={cb => handleStart(cb(startVerse))}
-                  onSelectItem={item => handleStart(item.value)}
+                  onSelectItem={item => handleStart(Number(item.value))}
                   maxHeight={220}
                   listMode="SCROLLVIEW"
                   dropDownDirection="TOP"
@@ -158,7 +158,7 @@ export default function TeacherNewSession() {
                   value={endVerse}
                   items={verseItems}
                   setValue={cb => handleEnd(cb(endVerse))}
-                  onSelectItem={item => handleEnd(item.value)}
+                  onSelectItem={item => handleEnd(Number(item.value))}
                   maxHeight={220}
                   listMode="SCROLLVIEW"
                   dropDownDirection="TOP"
