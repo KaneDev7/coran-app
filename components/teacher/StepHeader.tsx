@@ -3,9 +3,16 @@ import { router } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import { primary, secondary, secondary2 } from '@/style/variables'
 
+interface StepHeaderProps {
+  title: string
+  subtitle?: string
+  step?: number
+  totalSteps?: number
+}
+
 // En-tête des étapes de l'assistant professeur : retour + titre +
 // progression (points).
-export function StepHeader({ title, subtitle, step, totalSteps = 3 }) {
+export function StepHeader({ title, subtitle, step, totalSteps = 3 }: StepHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>

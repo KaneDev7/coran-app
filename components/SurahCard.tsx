@@ -2,10 +2,18 @@ import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { primary, secondary } from '@/style/variables'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
+import type { Sourate } from '@/types/models'
+
+interface SurahCardProps {
+  item: Sourate
+  onPress?: () => void
+  disabled?: boolean
+  selected?: boolean
+}
 
 // Carte sourate présentationnelle, réutilisable (mode Professeur,
 // et pourra remplacer le visuel de SourateItem).
-export function SurahCard({ item, onPress, disabled, selected }) {
+export function SurahCard({ item, onPress, disabled, selected }: SurahCardProps) {
   return (
     <Pressable
       style={({ pressed }) => [

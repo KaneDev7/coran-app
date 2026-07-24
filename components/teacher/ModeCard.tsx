@@ -1,9 +1,28 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons'
+import type { ComponentProps } from 'react'
+
+interface ModeCardProps {
+  icon: ComponentProps<typeof MaterialCommunityIcons>['name']
+  title: string
+  subtitle: string
+  colors: readonly [string, string, ...string[]]
+  onPress?: () => void
+  badge?: string
+  disabled?: boolean
+}
 
 // Grande carte de choix de mode sur la page d'accueil.
-export function ModeCard({ icon, title, subtitle, colors, onPress, badge, disabled }) {
+export function ModeCard({
+  icon,
+  title,
+  subtitle,
+  colors,
+  onPress,
+  badge,
+  disabled,
+}: ModeCardProps) {
   return (
     <Pressable
       style={({ pressed }) => [

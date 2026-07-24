@@ -4,7 +4,12 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { primary, secondary } from '@/style/variables';
 
-export const EmptyList = ({ title, desc }) => {
+interface EmptyListProps {
+  title: string
+  desc: string
+}
+
+export const EmptyList = ({ title, desc }: EmptyListProps) => {
     return (
         <View style={styles.container}>
             <FontAwesome6 name="folder-open" size={64} color={secondary} style={{opacity: .5}} />

@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
 import { Slider } from '@miblanchard/react-native-slider';
-import { AppRegistry, StyleSheet, View, Text } from 'react-native';
+import { AppRegistry, StyleSheet, View } from 'react-native';
 import { primary } from '../../style/variables';
 
-export const InputRange = ({ value, setValue = 0.2, max, min }) => {
+interface InputRangeProps {
+  value: number
+  setValue: (value: number) => void
+  max: number
+  min: number
+}
+
+export const InputRange = ({ value, setValue, max, min }: InputRangeProps) => {
 
     return (
         <View style={styles.container}>

@@ -1,9 +1,19 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import type { ComponentProps } from 'react'
+import type { TeacherPhase } from '@/types/models'
+
+type IconName = ComponentProps<typeof MaterialCommunityIcons>['name']
+
+interface PhaseConfig {
+  label: string
+  icon: IconName
+  bg: string
+}
 
 // Bannière d'état du drill : indique clairement à l'utilisateur ce
 // qui se passe (écoute du réciteur / à lui de répéter / on l'écoute).
-const CONFIG = {
+const CONFIG: Record<TeacherPhase, PhaseConfig> = {
   reciter: {
     label: 'Écoutez le réciteur',
     icon: 'account-voice',
@@ -36,7 +46,7 @@ const CONFIG = {
   },
 }
 
-export function PhaseBanner({ phase }) {
+export function PhaseBanner({ phase }: { phase: TeacherPhase }) {
   const c = CONFIG[phase] ?? CONFIG.idle
   const showSpinner = phase === 'reciter' || phase === 'prompt'
 

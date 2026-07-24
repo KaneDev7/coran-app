@@ -1,9 +1,27 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import type { ComponentProps } from 'react'
 import { primary } from '@/style/variables'
 
+type IconName = ComponentProps<typeof MaterialCommunityIcons>['name']
+
+interface ControlButtonProps {
+  icon: IconName
+  label: string
+  onPress: () => void
+  variant?: 'stop' | 'primary'
+}
+
+interface SessionControlsProps {
+  paused: boolean
+  onReplay: () => void
+  onSkip: () => void
+  onPauseResume: () => void
+  onStop: () => void
+}
+
 // Contrôles manuels du drill (secours face aux limites du détecteur).
-function ControlButton({ icon, label, onPress, variant }) {
+function ControlButton({ icon, label, onPress, variant }: ControlButtonProps) {
   return (
     <Pressable
       style={({ pressed }) => [
@@ -31,7 +49,13 @@ function ControlButton({ icon, label, onPress, variant }) {
   )
 }
 
-export function SessionControls({ paused, onReplay, onSkip, onPauseResume, onStop }) {
+export function SessionControls({
+  paused,
+  onReplay,
+  onSkip,
+  onPauseResume,
+  onStop,
+}: SessionControlsProps) {
   return (
     <View style={styles.row}>
       <ControlButton icon="restart" label="Rejouer" onPress={onReplay} />

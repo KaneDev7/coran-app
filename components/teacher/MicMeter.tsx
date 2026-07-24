@@ -2,9 +2,15 @@ import { View, Text, StyleSheet } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { primary, secondary2 } from '@/style/variables'
 
+interface MicMeterProps {
+  level?: number
+  active?: boolean
+  label?: string
+}
+
 // Mètre de niveau micro en direct : rassure l'utilisateur que le
 // détecteur l'entend. `level` ∈ 0..1. `active` = phase d'écoute.
-export function MicMeter({ level = 0, active = false, label }) {
+export function MicMeter({ level = 0, active = false, label }: MicMeterProps) {
   // 5 barres qui s'allument selon le niveau.
   const bars = [0.15, 0.35, 0.55, 0.75, 0.9]
 
