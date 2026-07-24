@@ -4,6 +4,9 @@ import {
   useEffect,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
+  type ReactNode,
 } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
@@ -30,7 +33,67 @@ import {
   ensureMicPermission,
   DEFAULT_SENSITIVITY_DB,
   DEFAULT_SILENCE_TIMEOUT_MS,
+  type VoiceDetector,
 } from '@/services/voiceDetector'
+import type {
+  Sourate,
+  SavedSession,
+  DownloadState,
+  DownloadStatus,
+  TeacherPhase,
+} from '@/types/models'
+
+interface TeacherSettings {
+  sensitivityDb: number
+  silenceTimeoutMs: number
+  promptDelayMs: number
+}
+
+interface TeacherContextValue {
+  // config
+  surahIndex: number
+  surah: Sourate
+  surahNumber: number
+  versesCount: number
+  startVerse: number
+  endVerse: number
+  repetitions: number
+  reciter: string
+  rate: number
+  settings: TeacherSettings
+  selectSurah: (index: number) => void
+  loadConfig: (config: SavedSession) => void
+  setStartVerse: Dispatch<SetStateAction<number>>
+  setEndVerse: Dispatch<SetStateAction<number>>
+  setRepetitions: (value: number) => void
+  setReciter: Dispatch<SetStateAction<string>>
+  setRate: (value: number) => void
+  setSettings: Dispatch<SetStateAction<TeacherSettings>>
+  setSensitivity: (db: number) => void
+  // runtime
+  phase: TeacherPhase
+  currentVerse: number
+  currentRepetition: number
+  loopCount: number
+  verseText: string
+  micLevel: number
+  permissionDenied: boolean
+  setPermissionDenied: Dispatch<SetStateAction<boolean>>
+  startedAt: number | null
+  // commandes
+  start: () => Promise<void>
+  stop: () => Promise<void>
+  pause: () => Promise<void>
+  resume: () => Promise<void>
+  replayVerse: () => Promise<void>
+  skipVerse: () => Promise<void>
+  // hors ligne (séances enregistrées)
+  downloadState: DownloadState
+  downloadingId: number | null
+  saveSessionOffline: () => Promise<SavedSession | null>
+  retryVerse: (session: SavedSession, verseNumber: number) => Promise<void>
+  removeSessionOffline: (session: SavedSession) => Promise<void>
+}
 
 // ============================================================
 // Domaine : mode Professeur (drill de mémorisation guidé).
@@ -41,7 +104,7 @@ import {
 //   suivant) → ... → BOUCLE le passage à l'infini jusqu'à "stop".
 // ============================================================
 
-const TeacherContext = createContext(null)
+const TeacherContext = createContext<TeacherContextValue | null>(null)
 
 const PROMPT_DELAY_MS = 800
 // Valeurs par défaut d'une nouvelle séance.
@@ -50,7 +113,7 @@ const DEFAULT_RATE = 1
 // Réciteur par défaut : le premier de la liste.
 const DEFAULT_RECITER = reciteurs[0].title
 
-export function TeacherProvider({ children }) {
+export function TeacherProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const userId = user?.id ?? 'anonymous'
 
@@ -71,9 +134,9 @@ export function TeacherProvider({ children }) {
   // downloadState = { [sessionId]: { versets: { [numVerset]: statut } } }
   // statut ∈ 'pending' | 'downloading' | 'done' | 'error'  (même modèle
   // que OfflineContext du mode libre).
-  const [downloadState, setDownloadState] = useState({})
-  const downloadStateRef = useRef({})
-  const [downloadingId, setDownloadingId] = useState(null)
+  const [downloadState, setDownloadState] = useState<DownloadState>({})
+  const downloadStateRef = useRef<DownloadState>({})
+  const [downloadingId, setDownloadingId] = useState<number | null>(null)
   const dlKey = `teacher_dl_${userId}`
 
   const surah = sourates[surahIndex]
@@ -81,18 +144,18 @@ export function TeacherProvider({ children }) {
   const versesCount = surah?.versets ?? 7
 
   // ---- État runtime du drill (pour l'UI) ----
-  const [phase, setPhase] = useState('idle') // idle|reciter|prompt|listening|repeating|paused
+  const [phase, setPhase] = useState<TeacherPhase>('idle') // idle|reciter|prompt|listening|repeating|paused
   const [currentVerse, setCurrentVerse] = useState(1)
   const [currentRepetition, setCurrentRepetition] = useState(1)
   const [loopCount, setLoopCount] = useState(0)
   const [verseText, setVerseText] = useState('')
   const [micLevel, setMicLevel] = useState(0)
   const [permissionDenied, setPermissionDenied] = useState(false)
-  const [startedAt, setStartedAt] = useState(null)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
 
   // ---- Refs moteur (fiables dans les closures async) ----
-  const soundRef = useRef(null)
-  const detectorRef = useRef(null)
+  const soundRef = useRef<Audio.Sound | null>(null)
+  const detectorRef = useRef<VoiceDetector | null>(null)
   // Jeton de session : toute opération en vol s'abandonne si le jeton
   // a changé (stop / rejouer / passer / démontage) — anti-course, même
   // principe que PlayerContext.
@@ -120,7 +183,7 @@ export function TeacherProvider({ children }) {
 
   // Setter de répétitions : garde la ref à jour (utilisée par le moteur
   // et la sauvegarde hors ligne).
-  const setRepetitions = value => {
+  const setRepetitions = (value: number) => {
     repetitionsRef.current = value
     setRepetitionsState(value)
   }
@@ -139,7 +202,7 @@ export function TeacherProvider({ children }) {
   }
 
   // ---- Sélection depuis l'assistant ----
-  const selectSurah = index => {
+  const selectSurah = (index: number) => {
     resetSettingsToDefaults() // nouvelle séance : réglages remis à l'équilibre
     setSurahIndex(index)
     setStartVerse(1)
@@ -147,7 +210,7 @@ export function TeacherProvider({ children }) {
   }
 
   // Charge une configuration complète (reprise d'un passage sauvegardé).
-  const loadConfig = config => {
+  const loadConfig = (config: SavedSession) => {
     setSurahIndex(config.surahIndex)
     setStartVerse(config.startVerse)
     setEndVerse(config.endVerse)
@@ -158,8 +221,9 @@ export function TeacherProvider({ children }) {
     rateRef.current = nextRate
     setRate(nextRate)
     if (config.sensitivityDb != null) {
-      settingsRef.current = { ...settingsRef.current, sensitivityDb: config.sensitivityDb }
-      setSettings(s => ({ ...s, sensitivityDb: config.sensitivityDb }))
+      const db = config.sensitivityDb
+      settingsRef.current = { ...settingsRef.current, sensitivityDb: db }
+      setSettings(s => ({ ...s, sensitivityDb: db }))
     }
   }
 
@@ -205,7 +269,7 @@ export function TeacherProvider({ children }) {
   }
 
   // ---- Chargement du texte (cache → local → API) ----
-  async function loadVerseText(ayah, session) {
+  async function loadVerseText(ayah: number, session: number) {
     const cached = getCachedText(`text_${ayah}`)
     if (cached != null) {
       setVerseText(cached)
@@ -226,7 +290,7 @@ export function TeacherProvider({ children }) {
   }
 
   // ---- Lecture d'un verset par le réciteur (cache → local → API) ----
-  async function reciteCurrentVerse(session) {
+  async function reciteCurrentVerse(session: number) {
     if (session !== sessionRef.current) return
     setPhase('reciter')
     setCurrentVerse(verseRef.current)
@@ -264,7 +328,7 @@ export function TeacherProvider({ children }) {
         { shouldPlay: true, volume: 1 },
         status => {
           if (session !== sessionRef.current) return
-          if (status.didJustFinish) afterRecite(session)
+          if (status.isLoaded && status.didJustFinish) afterRecite(session)
         },
       )
       if (session !== sessionRef.current) {
@@ -287,7 +351,7 @@ export function TeacherProvider({ children }) {
   }
 
   // ---- Après la récitation : petite pause puis écoute ----
-  async function afterRecite(session) {
+  async function afterRecite(session: number) {
     if (session !== sessionRef.current) return
     setPhase('prompt')
     await wait(settingsRef.current.promptDelayMs)
@@ -296,7 +360,7 @@ export function TeacherProvider({ children }) {
   }
 
   // ---- Phase d'écoute : détecteur de voix ----
-  async function beginListening(session) {
+  async function beginListening(session: number) {
     if (session !== sessionRef.current) return
     setPhase('listening')
     setMicLevel(0)
@@ -318,7 +382,7 @@ export function TeacherProvider({ children }) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
         },
         onSpeechEnd: () => onUserFinished(session),
-        onLevel: level => {
+        onLevel: (level: number) => {
           if (session === sessionRef.current) setMicLevel(level)
         },
       })
@@ -333,7 +397,7 @@ export function TeacherProvider({ children }) {
   }
 
   // ---- L'utilisateur a fini de répéter : on avance ----
-  async function onUserFinished(session) {
+  async function onUserFinished(session: number) {
     if (session !== sessionRef.current) return
     detectorRef.current = null
     setMicLevel(0)
@@ -431,20 +495,20 @@ export function TeacherProvider({ children }) {
 
   // Règle la vitesse. Met à jour l'UI + la ref (lue au prochain verset)
   // ET applique en direct à la récitation en cours.
-  const applyRate = value => {
+  const applyRate = (value: number) => {
     rateRef.current = value
     setRate(value)
-    soundRef.current?.setRateAsync?.(value, true).catch(() => {})
+    soundRef.current?.setRateAsync(value, true).catch(() => {})
   }
 
   // Règle la sensibilité du micro. Met à jour l'UI + la ref (lue à la
   // prochaine écoute) ET, si une écoute est en cours, le détecteur en
   // direct — pour que l'ajustement soit immédiat quand le micro « reste
   // bloqué » à cause du bruit de fond.
-  const setSensitivity = db => {
+  const setSensitivity = (db: number) => {
     settingsRef.current = { ...settingsRef.current, sensitivityDb: db }
     setSettings(s => ({ ...s, sensitivityDb: db }))
-    detectorRef.current?.setSensitivity?.(db)
+    detectorRef.current?.setSensitivity(db)
   }
 
   // ============================================================
@@ -454,13 +518,17 @@ export function TeacherProvider({ children }) {
   // drill retombe automatiquement sur les fichiers locaux.
   // ============================================================
 
-  const applyDownloadState = next => {
+  const applyDownloadState = (next: DownloadState) => {
     downloadStateRef.current = next
     setDownloadState(next)
     AsyncStorage.setItem(dlKey, JSON.stringify(next)).catch(() => {})
   }
 
-  const updateVerseStatus = (sessionId, verseNumber, status) => {
+  const updateVerseStatus = (
+    sessionId: number,
+    verseNumber: number,
+    status: DownloadStatus,
+  ) => {
     const prev = downloadStateRef.current
     applyDownloadState({
       ...prev,
@@ -471,7 +539,7 @@ export function TeacherProvider({ children }) {
   }
 
   // Télécharge UN verset (audio + texte) et met à jour son statut.
-  const downloadVerse = async (session, verseNumber) => {
+  const downloadVerse = async (session: SavedSession, verseNumber: number) => {
     const sNumber = sourates[session.surahIndex]?.numero ?? 1
     const position = convertSelectVerset({ surahNumber: sNumber, selectedValue: verseNumber })
     updateVerseStatus(session.id, verseNumber, 'downloading')
@@ -488,9 +556,9 @@ export function TeacherProvider({ children }) {
 
   // Télécharge tous les versets d'une séance, séquentiellement. Une
   // erreur sur un verset n'arrête pas les suivants.
-  const downloadSession = async session => {
+  const downloadSession = async (session: SavedSession) => {
     setDownloadingId(session.id)
-    const versets = {}
+    const versets: Record<number, DownloadStatus> = {}
     for (let i = session.startVerse; i <= session.endVerse; i++) versets[i] = 'pending'
     applyDownloadState({ ...downloadStateRef.current, [session.id]: { versets } })
 
@@ -518,12 +586,12 @@ export function TeacherProvider({ children }) {
   }
 
   // Relance UNIQUEMENT le verset échoué d'une séance.
-  const retryVerse = async (session, verseNumber) => {
+  const retryVerse = async (session: SavedSession, verseNumber: number) => {
     await downloadVerse(session, verseNumber)
   }
 
   // Supprime une séance : config + fichiers téléchargés + suivi.
-  const removeSessionOffline = async session => {
+  const removeSessionOffline = async (session: SavedSession) => {
     await deleteSession(userId, session.id)
     const sNumber = sourates[session.surahIndex]?.numero ?? 1
     for (let i = session.startVerse; i <= session.endVerse; i++) {
@@ -543,11 +611,12 @@ export function TeacherProvider({ children }) {
     const load = async () => {
       try {
         const raw = await AsyncStorage.getItem(dlKey)
-        const stored = raw ? JSON.parse(raw) : {}
+        const stored: DownloadState = raw ? JSON.parse(raw) : {}
         for (const sid of Object.keys(stored)) {
           const versets = stored[sid]?.versets || {}
           for (const v of Object.keys(versets)) {
-            if (versets[v] === 'pending' || versets[v] === 'downloading') versets[v] = 'error'
+            const key = Number(v)
+            if (versets[key] === 'pending' || versets[key] === 'downloading') versets[key] = 'error'
           }
         }
         downloadStateRef.current = stored
@@ -623,8 +692,9 @@ export function TeacherProvider({ children }) {
   )
 }
 
-function wait(ms) {
+function wait(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export const useTeacher = () => useContext(TeacherContext)
+export const useTeacher = (): TeacherContextValue =>
+  useContext(TeacherContext) as TeacherContextValue
