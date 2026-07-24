@@ -62,7 +62,17 @@ export type TeacherPhase =
   | 'repeating'
   | 'paused'
 
-// ---- Téléchargement hors ligne ----
+// ---- Téléchargement hors ligne (mode Révision libre) ----
+// Passage téléchargé pour écoute hors connexion.
+export interface Lesson {
+  id: number
+  selectSartVerset: number
+  selectEndVerset: number
+  surahNumber: number
+  index: number
+  reciter: string
+}
+
 export type DownloadStatus = 'pending' | 'downloading' | 'done' | 'error'
 export type VerseStatusMap = Record<number, DownloadStatus>
 export type DownloadState = Record<string, { versets: VerseStatusMap }>

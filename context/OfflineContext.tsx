@@ -1,4 +1,14 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as FileSystem from 'expo-file-system/legacy'
 import { convertSelectVerset } from '@/helpers'
@@ -12,6 +22,30 @@ import { storeLessons } from '@/services/storage'
 import { useLibrary } from './LibraryContext'
 import { useReciter } from './ReciterContext'
 import { useAuth } from './AuthContext'
+import type { Lesson, DownloadState, DownloadStatus } from '@/types/models'
+
+interface SaveLessonResult {
+  success: boolean
+  error?: string
+}
+
+interface OfflineContextValue {
+  lessonList: Lesson[]
+  onSaveLeason: () => Promise<SaveLessonResult>
+  onDeleteLesson: (id: number) => Promise<void>
+  downloadProgressId: string | number
+  isDeleting: boolean
+  setIsDeleting: Dispatch<SetStateAction<boolean>>
+  downloadState: DownloadState
+  retryVerset: (lessonId: number, verseNumber: number) => Promise<void>
+  isOfflineMode: boolean
+  isOfflineModeRef: MutableRefObject<boolean>
+  activeLessonId: number | null
+  enableOfflineMode: (lessonId?: number | null) => void
+  disableOfflineMode: () => void
+  offlineError: boolean
+  setOfflineError: Dispatch<SetStateAction<boolean>>
+}
 
 // Domaine : sections téléchargées (leçons) et mode hors ligne.
 //
@@ -32,9 +66,9 @@ const ESTIMATED_BYTES_PER_VERSE = 2 * 1024 * 1024
 // Marge de sécurité : on refuse de remplir le disque jusqu'au dernier octet.
 const SAFETY_MARGIN_BYTES = 20 * 1024 * 1024
 
-const OfflineContext = createContext(null)
+const OfflineContext = createContext<OfflineContextValue | null>(null)
 
-export function OfflineProvider({ children }) {
+export function OfflineProvider({ children }: { children: ReactNode }) {
   const { selectSartVerset, selectEndVerset, surahNumber, currentIndex } =
     useLibrary()
   const { reciter } = useReciter()
@@ -45,8 +79,8 @@ export function OfflineProvider({ children }) {
   const lessonsKey = `lesson_${userId}`
   const downloadStateKey = `downloadState_${userId}`
 
-  const [lessonList, setlessonList] = useState([])
-  const [downloadProgressId, setDownloadProgressId] = useState('')
+  const [lessonList, setlessonList] = useState<Lesson[]>([])
+  const [downloadProgressId, setDownloadProgressId] = useState<string | number>('')
   const [isDeleting, setIsDeleting] = useState(false)
 
   const [isOfflineMode, setIsOfflineMode] = useState(false)
@@ -55,15 +89,15 @@ export function OfflineProvider({ children }) {
   const isOfflineModeRef = useRef(false)
   const [offlineError, setOfflineError] = useState(false)
   // Passage actuellement chargé dans le lecteur (mode hors ligne).
-  const [activeLessonId, setActiveLessonId] = useState(null)
+  const [activeLessonId, setActiveLessonId] = useState<number | null>(null)
 
   // Statut de téléchargement par leçon/verset (voir en-tête de fichier).
-  const [downloadState, setDownloadState] = useState({})
+  const [downloadState, setDownloadState] = useState<DownloadState>({})
   // Ref miroir pour construire des mises à jour cohérentes dans les
   // boucles async, avec persistance systématique.
-  const downloadStateRef = useRef({})
+  const downloadStateRef = useRef<DownloadState>({})
 
-  const applyDownloadState = next => {
+  const applyDownloadState = (next: DownloadState) => {
     downloadStateRef.current = next
     setDownloadState(next)
     AsyncStorage.setItem(downloadStateKey, JSON.stringify(next)).catch(
@@ -71,7 +105,11 @@ export function OfflineProvider({ children }) {
     )
   }
 
-  const updateVerseStatus = (lessonId, verseNumber, status) => {
+  const updateVerseStatus = (
+    lessonId: number,
+    verseNumber: number,
+    status: DownloadStatus,
+  ) => {
     const prev = downloadStateRef.current
     applyDownloadState({
       ...prev,
@@ -84,7 +122,7 @@ export function OfflineProvider({ children }) {
     })
   }
 
-  const enableOfflineMode = (lessonId = null) => {
+  const enableOfflineMode = (lessonId: number | null = null) => {
     isOfflineModeRef.current = true
     setIsOfflineMode(true)
     setActiveLessonId(lessonId)
@@ -126,7 +164,7 @@ export function OfflineProvider({ children }) {
   const getLessons = async () => {
     try {
       const value = (await AsyncStorage.getItem(lessonsKey)) || '[]'
-      setlessonList(JSON.parse(value))
+      setlessonList(JSON.parse(value) as Lesson[])
     } catch (e) {
       // error reading value
     }
@@ -143,12 +181,13 @@ export function OfflineProvider({ children }) {
         setDownloadState({})
         return
       }
-      const stored = JSON.parse(raw)
+      const stored: DownloadState = JSON.parse(raw)
       for (const lessonId of Object.keys(stored)) {
         const versets = stored[lessonId]?.versets || {}
         for (const v of Object.keys(versets)) {
-          if (versets[v] === 'pending' || versets[v] === 'downloading') {
-            versets[v] = 'error'
+          const key = Number(v)
+          if (versets[key] === 'pending' || versets[key] === 'downloading') {
+            versets[key] = 'error'
           }
         }
       }
@@ -160,7 +199,7 @@ export function OfflineProvider({ children }) {
   }
 
   // Vérifie l'espace disque AVANT de lancer un téléchargement.
-  const hasEnoughFreeSpace = async verseCount => {
+  const hasEnoughFreeSpace = async (verseCount: number) => {
     try {
       const free = await FileSystem.getFreeDiskStorageAsync()
       return free > verseCount * ESTIMATED_BYTES_PER_VERSE + SAFETY_MARGIN_BYTES
@@ -171,7 +210,11 @@ export function OfflineProvider({ children }) {
   }
 
   // Télécharge UN verset (audio + texte) et met à jour son statut.
-  const downloadVerse = async (lesson, verseNumber, lessonReciter) => {
+  const downloadVerse = async (
+    lesson: Lesson,
+    verseNumber: number,
+    lessonReciter: string,
+  ) => {
     const position = convertSelectVerset({
       surahNumber: lesson.surahNumber,
       selectedValue: verseNumber,
@@ -191,12 +234,12 @@ export function OfflineProvider({ children }) {
 
   // Télécharge tous les versets d'une leçon, séquentiellement.
   // Une erreur sur un verset n'arrête pas les suivants.
-  const downloadLesson = async lesson => {
+  const downloadLesson = async (lesson: Lesson) => {
     const lessonReciter = lesson.reciter || reciter
     setDownloadProgressId(lesson.id)
 
     // Initialise tous les versets à 'pending' pour un affichage immédiat.
-    const versets = {}
+    const versets: Record<number, DownloadStatus> = {}
     for (let i = lesson.selectSartVerset; i <= lesson.selectEndVerset; i++) {
       versets[i] = 'pending'
     }
@@ -212,7 +255,7 @@ export function OfflineProvider({ children }) {
   }
 
   // Relance UNIQUEMENT le verset qui a échoué.
-  const retryVerset = async (lessonId, verseNumber) => {
+  const retryVerset = async (lessonId: number, verseNumber: number) => {
     const lesson = lessonList.find(item => item.id === lessonId)
     if (!lesson) return
     await downloadVerse(lesson, verseNumber, lesson.reciter || reciter)
@@ -251,7 +294,7 @@ export function OfflineProvider({ children }) {
     return { success: true }
   }
 
-  const onDeleteLesson = async id => {
+  const onDeleteLesson = async (id: number) => {
     setIsDeleting(true)
     const lessonsFiltred = lessonList.filter(item => item.id !== id)
     setlessonList(lessonsFiltred)
@@ -318,4 +361,5 @@ export function OfflineProvider({ children }) {
   )
 }
 
-export const useOffline = () => useContext(OfflineContext)
+export const useOffline = (): OfflineContextValue =>
+  useContext(OfflineContext) as OfflineContextValue

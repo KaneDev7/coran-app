@@ -1,7 +1,22 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+  type ReactNode,
+} from 'react'
+import {
+  Audio,
+  InterruptionModeIOS,
+  InterruptionModeAndroid,
+  type AVPlaybackStatus,
+} from 'expo-av'
 import { convertSelectVerset } from '@/helpers'
 import { sourates } from '@/constants/sorats.list'
+import type { Lesson } from '@/types/models'
 import {
   downloadText,
   getDownloadedAudio,
@@ -19,12 +34,45 @@ import { useReciter } from './ReciterContext'
 import { useLibrary } from './LibraryContext'
 import { useOffline } from './OfflineContext'
 
+interface PlayerContextValue {
+  sound: Audio.Sound | null
+  setSound: Dispatch<SetStateAction<Audio.Sound | null>>
+  playSound: (uri: string) => Promise<void>
+  initParams: () => Promise<void>
+  initAudio: (index: number) => Promise<void>
+  loadNewSound: (index: number) => Promise<void>
+  loadSelectLesson: (item: Lesson) => Promise<void>
+  exitOfflineMode: () => Promise<void>
+  startUrl: string
+  coranText: string
+  setCorantText: Dispatch<SetStateAction<string>>
+  isPlaying: boolean
+  setIsplaying: Dispatch<SetStateAction<boolean>>
+  isPause: boolean
+  setIsPause: Dispatch<SetStateAction<boolean>>
+  isLoading: boolean
+  setIsLoading: Dispatch<SetStateAction<boolean>>
+  isFirstStart: boolean
+  setIsFirstStart: Dispatch<SetStateAction<boolean>>
+  playPauseIcon: string
+  setPlayPauseIcon: Dispatch<SetStateAction<string>>
+  duration: number
+  timeUpdate: number
+  volume: number
+  setVolume: Dispatch<SetStateAction<number>>
+  rate: number
+  setRate: Dispatch<SetStateAction<number>>
+  connectionError: boolean
+  setConnectionError: Dispatch<SetStateAction<boolean>>
+  disabled: boolean
+}
+
 // Domaine : moteur de lecture audio.
 // Consomme ReciterContext (URL API), LibraryContext (plage de versets)
 // et OfflineContext (source locale vs API).
-const PlayerContext = createContext(null)
+const PlayerContext = createContext<PlayerContextValue | null>(null)
 
-export function PlayerProvider({ children }) {
+export function PlayerProvider({ children }: { children: ReactNode }) {
   const { reciter } = useReciter()
   const {
     surahNumber,
@@ -42,7 +90,7 @@ export function PlayerProvider({ children }) {
     useOffline()
 
   const [startUrl, setStartUrl] = useState('')
-  const [sound, setSound] = useState()
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
   const [startPlayVerset, setStartPlayVerset] = useState(1)
   const [endPlayVerset, setEndPlayVerset] = useState(7)
   const [coranText, setCorantText] = useState('')
@@ -60,7 +108,7 @@ export function PlayerProvider({ children }) {
   // Référence toujours à jour du son courant (le state `sound` est
   // asynchrone et ne peut pas être utilisé de façon fiable dans les
   // closures).
-  const soundRef = useRef(null)
+  const soundRef = useRef<Audio.Sound | null>(null)
   // Verrou d'idempotence : vrai tant qu'un audio est en cours de
   // chargement. Empêche deux lectures simultanées.
   const isBusyRef = useRef(false)
@@ -74,7 +122,10 @@ export function PlayerProvider({ children }) {
 
   let currentVerset = startPlayVerset
 
-  async function loadSelectAudio(surahNumber, selectVerst) {
+  async function loadSelectAudio(
+    surahNumber: number,
+    selectVerst: { start: number; end: number },
+  ) {
     const startPlayVersetUpdate = convertSelectVerset({
       surahNumber,
       selectedValue: selectVerst.start,
@@ -125,7 +176,7 @@ export function PlayerProvider({ children }) {
 
   // Point d'entrée UNIQUE du mode hors ligne : sélection d'une section
   // sauvegardée depuis la page hors ligne.
-  async function loadSelectLesson(item) {
+  async function loadSelectLesson(item: Lesson) {
     const { selectSartVerset, selectEndVerset, index, surahNumber } = item
     await initParams()
     // L'id permet d'afficher l'indicateur "en écoute" sur le passage.
@@ -147,20 +198,20 @@ export function PlayerProvider({ children }) {
     disableOfflineMode()
   }
 
-  const loadNewSound = async index => {
+  const loadNewSound = async (index: number) => {
     await initParams()
     setCurrentSlide(selectSartVerset)
     setSurahTextValue(sourates[index].nom)
     setSurahNumber(sourates[index].numero)
   }
 
-  const initAudio = async index => {
+  const initAudio = async (index: number) => {
     // Choisir une sourate depuis la liste fait sortir du mode hors ligne.
     disableOfflineMode()
     await loadNewSound(index)
     setCurrentIndex(index)
     setCurrentSlide(1)
-    setLastVersetOfSelectedSurah(sourates[index]?.versets)
+    setLastVersetOfSelectedSurah(sourates[index]?.versets ?? 7)
   }
 
   // Cache activé seulement si la boucle du passage est assez courte
@@ -168,7 +219,7 @@ export function PlayerProvider({ children }) {
   const isCachingEnabled = () =>
     endPlayVerset - startPlayVerset + 1 <= CACHE_MAX_VERSE_SPAN
 
-  async function getCoranText(number) {
+  async function getCoranText(number: number) {
     // Boucle de passage : texte déjà en cache mémoire → affichage
     // instantané, zéro appel réseau.
     if (!isOfflineModeRef.current && isCachingEnabled()) {
@@ -203,17 +254,18 @@ export function PlayerProvider({ children }) {
       // Hors ligne, une erreur de lecture du texte ne doit ni déclencher
       // un appel réseau ni afficher l'alerte de connexion.
       if (isOfflineModeRef.current) return
-      if (error.message === 'Failed to fetch') {
+      if (error instanceof Error && error.message === 'Failed to fetch') {
         await downloadText(`text_${number}`, textUrl)
         setConnectionError(true)
       }
     }
   }
 
-  async function onPlaybackStatusUpdate(status, session) {
+  async function onPlaybackStatusUpdate(status: AVPlaybackStatus, session: number) {
     // Statut d'un son appartenant à une session invalidée (autre passage
     // sélectionné entre-temps) : on l'ignore totalement.
     if (session !== playbackSessionRef.current) return
+    if (!status.isLoaded) return
 
     setTimeUpdate(status.positionMillis)
     setIsLoading(!status.isPlaying)
@@ -231,7 +283,7 @@ export function PlayerProvider({ children }) {
     }
   }
 
-  async function playSound(uri) {
+  async function playSound(uri: string) {
     // Idempotence : si un audio est déjà en cours de chargement, on
     // ignore ce nouvel appel pour éviter deux lectures simultanées.
     if (isBusyRef.current) {
@@ -299,7 +351,7 @@ export function PlayerProvider({ children }) {
       }
 
       soundRef.current = newSound
-      setDuration(status.durationMillis)
+      setDuration(status.isLoaded ? status.durationMillis ?? 0 : 0)
       setSound(newSound)
     } catch (error) {
       setIsLoading(false)
@@ -402,4 +454,5 @@ export function PlayerProvider({ children }) {
   )
 }
 
-export const usePlayer = () => useContext(PlayerContext)
+export const usePlayer = (): PlayerContextValue =>
+  useContext(PlayerContext) as PlayerContextValue
