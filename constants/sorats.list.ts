@@ -1,4 +1,6 @@
-export const sourates = [
+import type { Sourate } from '@/types/models'
+
+export const sourates: Sourate[] = [
   { nom: "Al-Fatiha", versets: 7, numero: 1, nomArabe: "الفاتحة" },
   { nom: "Al-Baqara", versets: 286, numero: 2, nomArabe: "البقرة" },
   { nom: "Aal-E-Imran", versets: 200, numero: 3, nomArabe: "آل عمران" },

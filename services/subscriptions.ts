@@ -1,4 +1,5 @@
 import { authenticatedRequest } from './auth'
+import type { ApiResult } from '@/types/models'
 
 // ============================================================
 // Client des abonnements premium (mobile money via passerelle DexPay).
@@ -13,17 +14,21 @@ import { authenticatedRequest } from './auth'
 //      l'abonnement passe "active", puis rafraîchit le profil.
 // ============================================================
 
-export async function fetchPlans() {
+export async function fetchPlans(): Promise<ApiResult> {
   return authenticatedRequest('/subscriptions/plans', { method: 'GET' })
 }
 
-export async function checkout(plan, provider, phone) {
+export async function checkout(
+  plan: string,
+  provider: string,
+  phone: string,
+): Promise<ApiResult> {
   return authenticatedRequest('/subscriptions/checkout', {
     method: 'POST',
     body: { plan, provider, phone },
   })
 }
 
-export async function fetchMySubscription() {
+export async function fetchMySubscription(): Promise<ApiResult> {
   return authenticatedRequest('/subscriptions/me', { method: 'GET' })
 }

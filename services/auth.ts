@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { API_URL } from './api'
+import type { ApiResult } from '@/types/models'
 
 // ============================================================
 // Client d'authentification branché sur le backend NestJS.
@@ -16,6 +17,13 @@ import { API_URL } from './api'
 const ACCESS_TOKEN_KEY = 'auth_access_token'
 const REFRESH_TOKEN_KEY = 'auth_refresh_token'
 
+interface RequestOptions {
+  method?: string
+  body?: Record<string, unknown>
+  token?: string | null
+  timeoutMs?: number
+}
+
 // ---------- Stockage sécurisé des tokens ----------
 // SecureStore (Keychain/Keystore) en priorité. Si le module natif est
 // absent — lancement web, ou build de développement antérieur à
@@ -25,40 +33,40 @@ const REFRESH_TOKEN_KEY = 'auth_refresh_token'
 // qui est utilisé.
 
 const secureStorage = {
-  async set(key, value) {
+  async set(key: string, value: string): Promise<void> {
     try {
       await SecureStore.setItemAsync(key, value)
     } catch (e) {
       await AsyncStorage.setItem(key, value)
     }
   },
-  async get(key) {
+  async get(key: string): Promise<string | null> {
     try {
       const value = await SecureStore.getItemAsync(key)
       if (value !== null) return value
-    } catch (e) { }
+    } catch (e) {}
     return AsyncStorage.getItem(key)
   },
-  async remove(key) {
+  async remove(key: string): Promise<void> {
     try {
       await SecureStore.deleteItemAsync(key)
-    } catch (e) { }
+    } catch (e) {}
     await AsyncStorage.removeItem(key)
   },
 }
 
-async function storeSession(accessToken, refreshToken) {
+async function storeSession(accessToken: string, refreshToken: string): Promise<void> {
   await secureStorage.set(ACCESS_TOKEN_KEY, accessToken)
   await secureStorage.set(REFRESH_TOKEN_KEY, refreshToken)
 }
 
-async function clearSession() {
+async function clearSession(): Promise<void> {
   await secureStorage.remove(ACCESS_TOKEN_KEY)
   await secureStorage.remove(REFRESH_TOKEN_KEY)
 }
 
-const getAccessToken = () => secureStorage.get(ACCESS_TOKEN_KEY)
-const getRefreshToken = () => secureStorage.get(REFRESH_TOKEN_KEY)
+const getAccessToken = (): Promise<string | null> => secureStorage.get(ACCESS_TOKEN_KEY)
+const getRefreshToken = (): Promise<string | null> => secureStorage.get(REFRESH_TOKEN_KEY)
 
 // ---------- Appels HTTP ----------
 
@@ -68,7 +76,10 @@ const getRefreshToken = () => secureStorage.get(REFRESH_TOKEN_KEY)
 // chaque appel via AbortController.
 const DEFAULT_TIMEOUT_MS = 10000
 
-async function request(path, { method = 'POST', body, token, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+async function request(
+  path: string,
+  { method = 'POST', body, token, timeoutMs = DEFAULT_TIMEOUT_MS }: RequestOptions = {},
+): Promise<ApiResult> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -85,9 +96,7 @@ async function request(path, { method = 'POST', body, token, timeoutMs = DEFAULT
     const data = await response.json().catch(() => ({}))
 
     if (!response.ok) {
-      const message = Array.isArray(data.message)
-        ? data.message[0]
-        : data.message
+      const message = Array.isArray(data.message) ? data.message[0] : data.message
       return {
         success: false,
         status: response.status,
@@ -110,7 +119,10 @@ async function request(path, { method = 'POST', body, token, timeoutMs = DEFAULT
 // Appel authentifié avec rafraîchissement automatique : si l'access
 // token a expiré (401), on tente UNE rotation du refresh token puis
 // on rejoue la requête.
-export async function authenticatedRequest(path, options = {}) {
+export async function authenticatedRequest(
+  path: string,
+  options: RequestOptions = {},
+): Promise<ApiResult> {
   const token = await getAccessToken()
   let result = await request(path, { ...options, token })
 
@@ -127,55 +139,63 @@ export async function authenticatedRequest(path, options = {}) {
   return result
 }
 
-async function tryRefreshSession(timeoutMs) {
+async function tryRefreshSession(timeoutMs?: number): Promise<boolean> {
   const refreshToken = await getRefreshToken()
   if (!refreshToken) return false
 
   const result = await request('/auth/refresh', { body: { refreshToken }, timeoutMs })
   if (!result.success) return false
 
-  await storeSession(result.accessToken, result.refreshToken)
+  await storeSession(result.accessToken as string, result.refreshToken as string)
   return true
 }
 
 // ---------- API d'authentification ----------
 
-export async function register(fullName, email, password) {
+export async function register(
+  fullName: string,
+  email: string,
+  password: string,
+): Promise<ApiResult> {
   return request('/auth/register', { body: { fullName, email, password } })
 }
 
-export async function verifyEmail(email, code) {
+export async function verifyEmail(email: string, code: string): Promise<ApiResult> {
   const result = await request('/auth/verify-email', { body: { email, code } })
   if (result.success) {
-    await storeSession(result.accessToken, result.refreshToken)
+    await storeSession(result.accessToken as string, result.refreshToken as string)
   }
   return result
 }
 
-export async function resendCode(email) {
+export async function resendCode(email: string): Promise<ApiResult> {
   return request('/auth/resend-code', { body: { email } })
 }
 
-export async function login(email, password) {
+export async function login(email: string, password: string): Promise<ApiResult> {
   const result = await request('/auth/login', { body: { email, password } })
   if (result.success) {
-    await storeSession(result.accessToken, result.refreshToken)
+    await storeSession(result.accessToken as string, result.refreshToken as string)
   }
   return result
 }
 
-export async function forgotPassword(email) {
+export async function forgotPassword(email: string): Promise<ApiResult> {
   return request('/auth/forgot-password', { body: { email } })
 }
 
-export async function resetPassword(email, code, newPassword) {
+export async function resetPassword(
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<ApiResult> {
   return request('/auth/reset-password', { body: { email, code, newPassword } })
 }
 
 // Recharge la session au démarrage : profil via l'access token stocké,
 // avec rafraîchissement automatique si expiré. Chaque requête est bornée
 // par un timeout court ici pour ne jamais bloquer le splash.
-export async function fetchCurrentUser() {
+export async function fetchCurrentUser(): Promise<ApiResult | null> {
   const token = await getAccessToken()
   if (!token) return null
 
@@ -193,11 +213,11 @@ export async function fetchCurrentUser() {
 // Efface la session stockée en LOCAL uniquement (Keychain/Keystore +
 // AsyncStorage), SANS appel réseau : utilisé au démarrage quand le
 // backend est injoignable, pour déconnecter sans risquer de bloquer.
-export async function clearStoredSession() {
+export async function clearStoredSession(): Promise<void> {
   await clearSession()
 }
 
-export async function signOut() {
+export async function signOut(): Promise<void> {
   const refreshToken = await getRefreshToken()
   if (refreshToken) {
     // Révoque la session côté serveur (meilleur effort).

@@ -35,15 +35,33 @@ const ONSET_FRAMES = 3
 // Fréquence de lecture du niveau sonore.
 const METER_INTERVAL_MS = 100
 
+export interface VoiceDetectorCallbacks {
+  onSpeechStart?: () => void
+  onSpeechEnd?: () => void
+  onLevel?: (level: number) => void
+}
+
+export interface VoiceDetectorOptions {
+  sensitivityDb?: number
+  silenceTimeoutMs?: number
+}
+
+export interface VoiceDetector {
+  start(callbacks?: VoiceDetectorCallbacks): Promise<void>
+  stop(): Promise<void>
+  setSensitivity(db: number): void
+  setSilenceTimeout(ms: number): void
+}
+
 // Normalise un niveau dBFS vers 0..1 pour l'affichage du mètre.
-export function normalizeLevel(db) {
+export function normalizeLevel(db: number | null | undefined): number {
   if (db == null) return 0
   return Math.max(0, Math.min(1, (db + 60) / 60))
 }
 
 // Libellé humain pour une valeur de seuil : aide l'utilisateur à
 // comprendre le réglage sans lire des dBFS.
-export function sensitivityLabel(db) {
+export function sensitivityLabel(db: number): string {
   if (db <= -44) return 'Très sensible · endroit calme'
   if (db <= -37) return 'Sensible · endroit calme'
   if (db <= -31) return 'Équilibré'
@@ -52,7 +70,7 @@ export function sensitivityLabel(db) {
 }
 
 // Demande (ou vérifie) la permission micro. Renvoie un booléen.
-export async function ensureMicPermission() {
+export async function ensureMicPermission(): Promise<boolean> {
   try {
     const current = await Audio.getPermissionsAsync()
     if (current.granted) return true
@@ -64,24 +82,23 @@ export async function ensureMicPermission() {
 }
 
 // Crée un détecteur à usage unique par phase d'écoute.
-// callbacks : { onSpeechStart, onSpeechEnd, onLevel }
 export function createVoiceDetector({
   sensitivityDb = DEFAULT_SENSITIVITY_DB,
   silenceTimeoutMs = DEFAULT_SILENCE_TIMEOUT_MS,
-} = {}) {
-  let recording = null
+}: VoiceDetectorOptions = {}): VoiceDetector {
+  let recording: Audio.Recording | null = null
   let stopped = false
   let hasSpoken = false
   let onsetCount = 0
-  let silenceStart = null
-  let cbs = {}
+  let silenceStart: number | null = null
+  let cbs: VoiceDetectorCallbacks = {}
   // Paramètres mutables : ajustables EN DIRECT pendant l'écoute via
   // setSensitivity / setSilenceTimeout (le seuil s'applique à la frame
   // suivante, sans recréer le détecteur ni couper le micro).
   let currentSensitivityDb = sensitivityDb
   let currentSilenceTimeoutMs = silenceTimeoutMs
 
-  function handleStatus(status) {
+  function handleStatus(status: Audio.RecordingStatus): void {
     if (stopped || !status || !status.isRecording) return
 
     const db = status.metering ?? -160
@@ -118,7 +135,7 @@ export function createVoiceDetector({
     }
   }
 
-  async function start(callbacks) {
+  async function start(callbacks?: VoiceDetectorCallbacks): Promise<void> {
     cbs = callbacks || {}
     stopped = false
     hasSpoken = false
@@ -137,7 +154,7 @@ export function createVoiceDetector({
     recording = rec
   }
 
-  async function stop() {
+  async function stop(): Promise<void> {
     if (stopped) return
     stopped = true
     const rec = recording
@@ -145,15 +162,15 @@ export function createVoiceDetector({
     if (rec) {
       try {
         await rec.stopAndUnloadAsync()
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 
   // Ajustements en direct (pendant l'écoute).
-  function setSensitivity(db) {
+  function setSensitivity(db: number): void {
     currentSensitivityDb = db
   }
-  function setSilenceTimeout(ms) {
+  function setSilenceTimeout(ms: number): void {
     currentSilenceTimeoutMs = ms
   }
 

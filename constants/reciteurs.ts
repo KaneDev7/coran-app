@@ -1,4 +1,6 @@
-export const reciteurs = [
+import type { Reciter } from '@/types/models'
+
+export const reciteurs: Reciter[] = [
     {
         name: 'Ayman Swoaid',
         title: 'aymanswoaid',

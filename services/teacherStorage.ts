@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import type { SavedSession, SessionConfig } from '@/types/models'
 
 // ============================================================
 // Sauvegarde/reprise des passages du mode Professeur.
@@ -8,12 +9,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 // suffisant pour reprendre un drill en un tap.
 // ============================================================
 
-const key = userId => `teacher_sessions_${userId ?? 'anonymous'}`
+const key = (userId?: string | null): string => `teacher_sessions_${userId ?? 'anonymous'}`
 
-export async function getSavedSessions(userId) {
+export async function getSavedSessions(userId?: string | null): Promise<SavedSession[]> {
   try {
     const raw = await AsyncStorage.getItem(key(userId))
-    return raw ? JSON.parse(raw) : []
+    return raw ? (JSON.parse(raw) as SavedSession[]) : []
   } catch (e) {
     return []
   }
@@ -21,17 +22,24 @@ export async function getSavedSessions(userId) {
 
 // Enregistre une config. Dédoublonne sur (sourate + plage + réciteur
 // + répétitions) pour ne pas accumuler de doublons.
-export async function saveSession(userId, config) {
+export async function saveSession(
+  userId: string | null | undefined,
+  config: SessionConfig,
+): Promise<SavedSession | null> {
   try {
     const existing = await getSavedSessions(userId)
-    const isSame = s =>
+    const isSame = (s: SavedSession): boolean =>
       s.surahIndex === config.surahIndex &&
       s.startVerse === config.startVerse &&
       s.endVerse === config.endVerse &&
       s.reciter === config.reciter &&
       s.repetitions === config.repetitions
     const deduped = existing.filter(s => !isSame(s))
-    const entry = { id: Date.now(), createdAt: new Date().toISOString(), ...config }
+    const entry: SavedSession = {
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      ...config,
+    }
     const next = [entry, ...deduped]
     await AsyncStorage.setItem(key(userId), JSON.stringify(next))
     return entry
@@ -40,7 +48,10 @@ export async function saveSession(userId, config) {
   }
 }
 
-export async function deleteSession(userId, id) {
+export async function deleteSession(
+  userId: string | null | undefined,
+  id: number,
+): Promise<boolean> {
   try {
     const existing = await getSavedSessions(userId)
     const next = existing.filter(s => s.id !== id)
@@ -53,7 +64,11 @@ export async function deleteSession(userId, id) {
 
 // Met à jour (écrase) les paramètres d'une séance enregistrée par son id.
 // `patch` contient les champs à modifier (repetitions, rate, sensitivityDb).
-export async function updateSession(userId, id, patch) {
+export async function updateSession(
+  userId: string | null | undefined,
+  id: number,
+  patch: Partial<SavedSession>,
+): Promise<SavedSession | null> {
   try {
     const existing = await getSavedSessions(userId)
     const next = existing.map(s => (s.id === id ? { ...s, ...patch } : s))

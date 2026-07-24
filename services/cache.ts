@@ -23,9 +23,9 @@ const AUDIO_CACHE_DIR = `${FileSystem.cacheDirectory}playback-audio/`
 
 // Texte des versets : un cache mémoire suffit (petites chaînes,
 // vidé en même temps que l'audio).
-const textCache = new Map()
+const textCache = new Map<string, string>()
 
-async function ensureCacheDir() {
+async function ensureCacheDir(): Promise<void> {
   try {
     const info = await FileSystem.getInfoAsync(AUDIO_CACHE_DIR)
     if (!info.exists) {
@@ -33,14 +33,14 @@ async function ensureCacheDir() {
         intermediates: true,
       })
     }
-  } catch (e) { }
+  } catch (e) {}
 }
 
 // La clé inclut le réciteur : pas de mélange de voix possible.
-const audioCachePath = key => `${AUDIO_CACHE_DIR}${key}.mp3`
+const audioCachePath = (key: string): string => `${AUDIO_CACHE_DIR}${key}.mp3`
 
 // Renvoie l'uri locale si ce verset est déjà en cache, sinon null.
-export async function getCachedAudio(key) {
+export async function getCachedAudio(key: string): Promise<string | null> {
   try {
     const info = await FileSystem.getInfoAsync(audioCachePath(key))
     return info.exists ? audioCachePath(key) : null
@@ -51,7 +51,7 @@ export async function getCachedAudio(key) {
 
 // Télécharge l'audio vers le cache, en arrière-plan (fire-and-forget
 // depuis l'appelant). Sans effet si déjà présent.
-export async function cacheAudio(key, url) {
+export async function cacheAudio(key: string, url: string): Promise<string | null> {
   try {
     await ensureCacheDir()
     const path = audioCachePath(key)
@@ -66,20 +66,20 @@ export async function cacheAudio(key, url) {
   }
 }
 
-export function getCachedText(key) {
+export function getCachedText(key: string): string | null {
   return textCache.get(key) ?? null
 }
 
-export function cacheText(key, text) {
+export function cacheText(key: string, text: string): void {
   textCache.set(key, text)
 }
 
 // Vide TOUT le cache de lecture (audio + texte). Appelé à chaque
 // changement de passage/sourate/réciteur pour garder une durée de
 // vie cohérente et un stockage borné.
-export async function clearPlaybackCache() {
+export async function clearPlaybackCache(): Promise<void> {
   textCache.clear()
   try {
     await FileSystem.deleteAsync(AUDIO_CACHE_DIR, { idempotent: true })
-  } catch (e) { }
+  } catch (e) {}
 }

@@ -1,3 +1,5 @@
+import type { Plan, PaymentProvider } from '@/types/models'
+
 // ============================================================
 // Configuration centrale du modèle freemium.
 //
@@ -27,7 +29,7 @@ export const FREE_HISTORY_DAYS = 7
 
 // Catalogue affiché dans le paywall. Doit rester aligné avec
 // backend/src/subscriptions/plans.ts (source de vérité des prix).
-export const PLANS = [
+export const PLANS: Plan[] = [
   {
     code: 'premium_yearly',
     label: 'Premium annuel',
@@ -49,12 +51,12 @@ export const PLANS = [
 // Fournisseurs mobile money proposés à l'utilisateur. La passerelle
 // d'encaissement (DexPay) est branchée côté backend ; l'utilisateur, lui,
 // choisit seulement le canal qu'il utilise.
-export const PAYMENT_PROVIDERS = [
+export const PAYMENT_PROVIDERS: PaymentProvider[] = [
   { code: 'wave', label: 'Wave', color: '#1DC6F4' },
   { code: 'orange_money', label: 'Orange Money', color: '#FF6600' },
 ]
 
 // Formatage FCFA lisible : 10000 -> "10 000 FCFA".
-export function formatFcfa(amount) {
-  return `${Number(amount).toLocaleString('fr-FR').replace(/ /g, ' ')} FCFA`
+export function formatFcfa(amount: number): string {
+  return `${Number(amount).toLocaleString('fr-FR').replace(/ /g, ' ')} FCFA`
 }
